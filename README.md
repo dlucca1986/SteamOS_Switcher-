@@ -33,7 +33,7 @@ If you love the Steam Deck gaming experience as much as I do, you’re in the ri
 To get started, simply copy and paste these commands into your terminal:
 
 ```bash
-git clone [https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git](https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git)
+git clone https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git
 cd SteamOS-Like-Session-Switcher-for-Linux-Desktop
 chmod +x install.sh
 sudo ./install.sh
