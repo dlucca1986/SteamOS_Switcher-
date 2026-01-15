@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # This script overrides the SDDM autologin configuration to set the target session.
 # It creates a temporary configuration file that SDDM reads upon restart.
 
@@ -6,12 +7,12 @@ set -e
 SESSION_FILE="$1"
 USER_NAME="$2"
 
-# Write the autologin configuration that SDDM will read on restart 
+# Write the autologin configuration that SDDM will read on restart
 cat > "/etc/sddm.conf.d/z1_current_session.conf" <<EOF
 [Autologin]
 User=$USER_NAME
 Session=$SESSION_FILE
 EOF
 
-# Restart SDDM after a 3-second delay to allow a clean exit 
-systemd-run --on-active=3s --unit=restart-sddm-delay /bin/systemctl restart sddm
+# Restart SDDM after a second delay to allow a clean exit
+systemd-run --on-active=1s --unit=restart-sddm-delay /bin/systemctl restart sddm
