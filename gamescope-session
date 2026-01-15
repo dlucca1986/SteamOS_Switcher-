@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# ==============================================================================
+# GAMESCOPE SESSION LAUNCHER
+# ==============================================================================
+# This script launches Steam in "Deck UI" mode using the Gamescope compositor.
+# It is designed to run as a standalone session from SDDM.
+# ==============================================================================
+
+# --- DISPLAY CONFIGURATION ---
+# Set your monitor's native resolution and refresh rate
+OUTPUT_WIDTH=1920
+OUTPUT_HEIGHT=1080
+REFRESH_RATE=120
+
+# --- SCALING & FILTERS ---
+# Scaler: auto, integer, fit, fill, stretch
+# Filter: linear, nearest, fsr, nis, pixel
+SCALER="fill"
+FILTER="fsr"
+FSR_SHARPNESS=2
+
+# --- PERFORMANCE & FEATURES ---
+# Enable Adaptive Sync (Variable Refresh Rate)
+ADAPTIVE_SYNC="--adaptive-sync"
+# Enable Immediate Flips (Lower latency, might cause tearing)
+IMMEDIATE_FLIPS="--immediate-flips"
+# MangoHud performance overlay (requires mangoapp installed)
+MANGO_HUD="--mangoapp"
+
+# --- PATHS ---
+# Automatically detects the current user's MangoHud config
+MANGOHUD_CONFIG="$HOME/.config/MangoHud/MangoHud.conf"
+
+# ==============================================================================
+# EXECUTION
+# ==============================================================================
+
+# Check if MangoHud config exists, otherwise use default
+if [ ! -f "$MANGOHUD_CONFIG" ]; then
+    MANGOHUD_CONFIGFILE=""
+else
+    export MANGOHUD_CONFIGFILE="$MANGOHUD_CONFIG"
+fi
+
+echo "Starting Gamescope at ${OUTPUT_WIDTH}x${OUTPUT_HEIGHT} @ ${REFRESH_RATE}Hz..."
+
+exec gamescope \
+    -W $OUTPUT_WIDTH \
+    -H $OUTPUT_HEIGHT \
+    -r $REFRESH_RATE \
+    -S $SCALER \
+    -F $FILTER \
+    --fsr-sharpness $FSR_SHARPNESS \
+    $ADAPTIVE_SYNC \
+    $IMMEDIATE_FLIPS \
+    $MANGO_HUD \
+    -e \
+    -- \
+    steam -steamdeck -steamos3
