@@ -43,7 +43,6 @@ For detailed guides and technical information, please visit our Project Wiki.
 ---
 
 
-
 ## 🤝 Acknowledgments & Credits
 
 This project wouldn't have been possible without the amazing work and guides from the Linux gaming community. A special thanks to:
@@ -61,14 +60,9 @@ This project wouldn't have been possible without the amazing work and guides fro
 Built with ❤️ by a gaming fan for the Linux Community.  
 **If you like this project, please leave a ⭐ Star on GitHub!** It helps other gamers find it.
 
-## ❤️ Support the Project
-
-Built with ❤️ by a gaming fan for the Linux Community.
-
-If you like this project, please leave a ⭐ Star on GitHub! It helps other gamers find it.
-
 
 ## 🚀 Quick Installation
+
 
 To get started, copy and paste these commands into your terminal:
 
