@@ -4,4 +4,4 @@
 # state that no updates configured for this bios
 # and exit
 echo "No updates configured for this bios"
-exit 0;
+exit 0
