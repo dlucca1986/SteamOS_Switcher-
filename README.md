@@ -1,14 +1,18 @@
 # 🎮 SteamOS Switcher for Desktop/Laptop
 
+
 > ### "Bringing the Seamless SteamOS Experience to any Linux Distribution (Arch-based)" 🚀
 
+
 ---
+
 
 ## 🌟 About the Project
 
 Hi, I'm **Daniele**, and I’m a hardcore gaming fanatic! 🕹️
 
 If you love the Steam Deck gaming experience as much as I do, you’re in the right place. I developed this project to faithfully simulate the **SteamOS ecosystem** on standard desktops and laptops, bringing that seamless "console-like" feeling to your Linux machine.
+
 
 ---
 
@@ -31,21 +35,22 @@ If you love the Steam Deck gaming experience as much as I do, you’re in the ri
 ---
 
 
-📖 Documentation & Wiki
+## 📖 Documentation & Wiki
 
-For detailed guides and technical information, please visit our Project Wiki. You will find:
+For detailed guides and technical information, please visit our Project Wiki.
 
-    🔑 Sudoers Setup: How to enable passwordless switching (Essential!).
 
-    🏗️ Architecture: How the Master/Helper system works under the hood.
+---
 
-    🛠️ Troubleshooting: Solutions for common issues.
 
-🤝 Acknowledgments & Credits
+
+## 🤝 Acknowledgments & Credits
 
 This project wouldn't have been possible without the amazing work and guides from the Linux gaming community. A special thanks to:
 
-    The SteamOS & Gamescope Teams: For building the foundation of handheld gaming on Linux.
+    shahnawazshahin :
+    https://github.com/shahnawazshahin/steam-using-gamescope-guide
+    che ha scritto una meravigliosa guida e ispirato il progetto
 
     Community Guides: Big thanks to the developers and enthusiasts on Reddit (r/SteamDeck, r/LinuxGaming) and the Arch Wiki contributors.
 
