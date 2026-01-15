@@ -1,7 +1,5 @@
 #!/bin/bash
+# This script is called by Steam's "Switch to Desktop" button.
+# It redirects the command to our main switcher.
 
-# This script is a wrapper to return to the KDE Plasma Desktop environment.
-# It calls the system's session selector to prioritize the "plasma" session
-# for the next login, effectively switching the system from Game Mode to Desktop Mode.
-
-/usr/lib/os-session-select plasma
+/usr/local/bin/steamos-session-select "$1"
