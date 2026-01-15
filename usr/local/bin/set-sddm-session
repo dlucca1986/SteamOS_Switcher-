@@ -7,12 +7,8 @@ set -e
 SESSION_FILE="$1"
 USER_NAME="$2"
 
-# Write the autologin configuration that SDDM will read on restart
+# Write the autologin configuration using sudo tee to handle permissions
 echo -e "[Autologin]\nUser=$USER_NAME\nSession=$SESSION_FILE" | sudo tee "/etc/sddm.conf.d/steamos-switcher.conf" > /dev/null
-[Autologin]
-User=$USER_NAME
-Session=$SESSION_FILE
-EOF
 
 # Restart SDDM after a second delay to allow a clean exit
 systemd-run --on-active=1s --unit=restart-sddm-delay /bin/systemctl restart sddm
