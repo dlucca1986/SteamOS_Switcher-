@@ -1,1 +1,3 @@
-
+#!/bin/bash
+# Calls the main BIOS update script
+exec /usr/local/bin/jupiter-biosupdate "$@"
