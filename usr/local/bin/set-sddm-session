@@ -8,7 +8,7 @@ SESSION_FILE="$1"
 USER_NAME="$2"
 
 # Write the autologin configuration that SDDM will read on restart
-cat > "/etc/sddm.conf.d/z1_current_session.conf" <<EOF
+cat > "/etc/sddm.conf.d/steamos-switcher.conf" <<EOF
 [Autologin]
 User=$USER_NAME
 Session=$SESSION_FILE
