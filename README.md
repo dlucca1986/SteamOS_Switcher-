@@ -102,7 +102,9 @@ mangohud:
 
 GameMode:
 
+- pacman -S gamemode
 
+ProtonUp-Qt:
 
-ProtonUp-Qt: (Optional) is a GUI tool to manage different versions of GE Proton.
+- yay -S protonup-qt
 
