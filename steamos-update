@@ -1,9 +1,3 @@
 #!/bin/bash
-
-# --- SYSTEM UPDATE WRAPPER ---
-# Wrapper for the steamos-update utility.
-# Ensures the update command is passed correctly from the UI.
-set -eu
-
-# Run the local update script 
+# Calls the main update script
 exec /usr/local/bin/steamos-update "$@"
