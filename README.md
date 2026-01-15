@@ -104,3 +104,13 @@ This project relies on the ability to switch display manager sessions automatica
 You must authorize the session scripts to run without a password to ensure a seamless transition.
 
 - 👉 [Follow the Sudoers Setup Guide here](https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop/wiki/Sudoers-Setup):
+
+---
+
+## 🗑️ Uninstallation
+To completely remove the switcher and all its configurations:
+```bash
+chmod +x uninstall.sh
+sudo ./uninstall.sh
+```
+
