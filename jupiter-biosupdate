@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# --- BIOS UPDATE WRAPPER ---
+# Wrapper for the jupiter-biosupdate utility.
+# Exit immediately on error or if undefined variables are used.
+set -eu
+
+# Execute the local BIOS update script 
+exec /usr/local/bin/jupiter-biosupdate "$@"
