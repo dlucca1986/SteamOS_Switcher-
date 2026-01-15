@@ -1,1 +1,3 @@
-
+#!/bin/bash
+# Calls the main update script
+exec /usr/local/bin/steamos-update "$@"
