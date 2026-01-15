@@ -1,20 +1,10 @@
 [Desktop Entry]
-Name=Game Mode
-Name[it_IT]=Modalità Gioco
+Name=Return to Gaming Mode
 Comment=Switch to Gamescope/Steam Deck UI session
-Comment[it_IT]=Passa alla sessione Gamescope (Steam Deck UI)
 Exec=/usr/local/bin/steamos-session-select gamescope-session-steam
 Icon=steam
 Terminal=false
 Type=Application
 StartupNotify=true
-Categories=Game;
-
-
-[Desktop Entry]
-Name=Return to Gaming Mode
-Exec=os-session-select gamescope-session-steam
-Icon=steam
-Terminal=false
-Type=Application
-Categories=System;
+Categories=System;Game;
+Keywords=steam;gamescope;deck;mode;
