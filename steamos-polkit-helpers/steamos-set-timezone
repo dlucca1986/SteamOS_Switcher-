@@ -1,1 +1,3 @@
-
+#!/bin/bash
+# Simply exits as timezone is managed by the host OS
+exit 0
