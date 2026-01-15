@@ -1,1 +1,5 @@
+#!/bin/bash
+# This script is called by Steam's "Switch to Desktop" button.
+# It redirects the command to our main switcher.
 
+/usr/local/bin/steamos-session-select plasma
