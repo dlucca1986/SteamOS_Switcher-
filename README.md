@@ -1,4 +1,4 @@
-# SteamOS-Like-Session-Switcher-for-Linux-Desktop
+# SteamOS-Like-Session-Switcher-for-Linux-Desktop -W.I.P
 This project provides a set of scripts to replicate the seamless session switching experience of the Steam Deck on a standard PC. It allows you to toggle between KDE Plasma (Desktop Mode) and Steam Big Picture/Gamescope (Game Mode) using SDDM.
 
 
