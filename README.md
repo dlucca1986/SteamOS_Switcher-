@@ -37,3 +37,40 @@ mangohud: (Optional) For performance monitoring.
 GameMode: (Optional) is a daemon that automatically optimizes your system while playing games. 
 
 ProtonUp-Qt: (Optional) is a GUI tool to manage different versions of GE Proton.
+
+Installation :
+
+Note: Before installing drivers, ensure the multilib repository is enabled. Edit your configuration file:
+
+- sudo nano /etc/pacman.conf
+
+Find and uncomment (remove the #) the following lines:
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+
+Save and exit (Ctrl+O, Enter, Ctrl+X), then update your system:
+
+- sudo pacman -Syu
+
+Install Core Vulkan & Dependencies :
+
+- sudo pacman -S --needed vulkan-icd-loader lib32-vulkan-icd-loader gamescope steam
+
+Install GPU-Specific Drivers :
+
+NVIDIA
+
+- sudo pacman -S --needed nvidia-utils lib32-nvidia-utils
+
+AMD (RADV - Recommended)
+
+- sudo pacman -S --needed vulkan-radeon lib32-vulkan-radeon
+
+AMD (AMDVLK - Alternative)
+
+- sudo pacman -S --needed amdvlk lib32-amdvlk
+
+INTEL
+
+- sudo pacman -S --needed vulkan-intel lib32-vulkan-intel
