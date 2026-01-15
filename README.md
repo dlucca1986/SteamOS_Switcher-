@@ -26,8 +26,20 @@ If you love the Steam Deck gaming experience as much as I do, you’re in the ri
 * **📦 Optimized for Arch-based Distros**
   Specifically tuned for the Arch ecosystem to ensure maximum compatibility and performance.
 
+---
 
-  📖 Documentation & Wiki
+## 🚀 Quick Installation
+
+To get started, copy and paste these commands into your terminal:
+
+```bash
+git clone [https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git](https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git)
+cd SteamOS-Like-Session-Switcher-for-Linux-Desktop
+chmod +x install.sh
+sudo ./install.sh
+
+
+📖 Documentation & Wiki
 
 For detailed guides and technical information, please visit our Project Wiki. You will find:
 
@@ -48,15 +60,3 @@ This project wouldn't have been possible without the amazing work and guides fro
     Open Source Contributors: To everyone sharing scripts and ideas to make Linux a better place for gamers.
 
 Built with ❤️ by a gaming fan for the Linux Community. If you like it, leave a ⭐!
-
----
-
-## 🚀 Quick Installation
-
-To get started, copy and paste these commands into your terminal:
-
-```bash
-git clone [https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git](https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git)
-cd SteamOS-Like-Session-Switcher-for-Linux-Desktop
-chmod +x install.sh
-sudo ./install.sh
