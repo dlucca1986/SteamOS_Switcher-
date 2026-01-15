@@ -23,6 +23,7 @@ sudo rm -f /usr/local/bin/gamescope-session
 sudo rm -f /usr/local/bin/steamos-update
 sudo rm -f /usr/local/bin/jupiter-biosupdate
 sudo rm -f /usr/local/bin/steamos-select-branch
+sudo rm -f /usr/local/bin/steamos-session-select
 
 # 3. Remove Polkit Helpers and Support Folders
 echo "[3/6] Cleaning up system directories..."
