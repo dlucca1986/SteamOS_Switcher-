@@ -1,9 +1,10 @@
-# 🎮 SteamOS Switcher for Handhelds
+# 🎮 SteamOS Switcher for Desktop/Laptop
 
-### "Bringing the Seamless SteamOS Experience to Any Linux Distribution"
+### "Bringing the Seamless SteamOS Experience to Linux Distribution (arch-based distro)"
 
 ## 🌟 About the Project
-Hi! I'm [Your Name/Username]. I developed this project to bridge the gap between standard Linux installations and the specialized Steam Deck UI (Gamescope).
+Hi! I'm Daniele, 
+I developed this project to bridge the gap between standard Linux installations and the specialized Steam Deck UI (Gamescope).
 
 When running Steam on handheld devices like the ROG Ally, Legion Go, or even standard PCs, users often face broken "Switch to Desktop" buttons or infinite update loops. This project provides a clean, professional-grade set of scripts that emulate the original SteamOS behavior, making the "Game Mode" experience fluid and reliable for everyone.
 
