@@ -41,7 +41,7 @@ If you love the Steam Deck gaming experience as much as I do, you’re in the ri
 ## 📖 Documentation & Wiki
 
 For detailed guides and technical information, please visit our Project Wiki.
-
+https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop/wiki
 
 ---
 
