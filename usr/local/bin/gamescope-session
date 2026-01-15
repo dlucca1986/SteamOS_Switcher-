@@ -43,8 +43,6 @@ else
     export MANGOHUD_CONFIGFILE="$MANGOHUD_CONFIG"
 fi
 
-echo "Starting Gamescope at ${OUTPUT_WIDTH}x${OUTPUT_HEIGHT} @ ${REFRESH_RATE}Hz..."
-
 exec gamescope \
     -W $OUTPUT_WIDTH \
     -H $OUTPUT_HEIGHT \
