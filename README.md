@@ -48,15 +48,15 @@ For detailed guides and technical information, please visit our Project Wiki.
 
 This project wouldn't have been possible without the amazing work and guides from the Linux gaming community. A special thanks to:
 
-    shahnawazshahin :
-    https://github.com/shahnawazshahin/steam-using-gamescope-guide
-    che ha scritto una meravigliosa guida e ispirato il progetto
+  shahnawazshahin :
+  https://github.com/shahnawazshahin/steam-using-gamescope-guide
+  che ha scritto una meravigliosa guida e ispirato il progetto
 
-    Community Guides: Big thanks to the developers and enthusiasts on Reddit (r/SteamDeck, r/LinuxGaming) and the Arch Wiki contributors.
+  Community Guides: Big thanks to the developers and enthusiasts on Reddit (r/SteamDeck, r/LinuxGaming) and the Arch Wiki contributors.
 
-    Open Source Contributors: To everyone sharing scripts and ideas to make Linux a better place for gamers.
+  Open Source Contributors: To everyone sharing scripts and ideas to make Linux a better place for gamers.
 
-❤️ Support the Project
+## ❤️ Support the Project
 
 Built with ❤️ by a gaming fan for the Linux Community.
 
