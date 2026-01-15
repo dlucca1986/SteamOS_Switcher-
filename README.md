@@ -13,13 +13,16 @@ What's inside ?
   A quick wrapper to call the system session selector and return to Plasma.
 
 Prerequisites :
+
 Before installing, ensure your system meets these requirements:
 
-Operating System: Arch Linux or EndeavourOS (or any Arch-based distro).
+Operating System: Arch Linux (or any Arch-based distro).
 
 Desktop Environment: KDE Plasma (Required for the plasma session target).
 
 Display Manager: SDDM (Required for the autologin switching logic).
+
+Check if your GPU supports Vulkan.
 
 Essential Packages:
 
@@ -27,4 +30,10 @@ gamescope: The micro-compositor for the Game Mode.
 
 steam: Ensure it's the official version.
 
+Additional Software :
+
 mangohud: (Optional) For performance monitoring.
+
+GameMode: (Optional) is a daemon that automatically optimizes your system while playing games. 
+
+ProtonUp-Qt: (Optional) is a GUI tool to manage different versions of GE Proton.
