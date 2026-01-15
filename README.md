@@ -7,11 +7,24 @@ What's inside ?
   The core logic. It writes a temporary configuration to /etc/sddm.conf.d/ to set the autologin session for the next boot and triggers a delayed restart of the Display     Manager.
 
 . gamescope-session: 
-  The Game Mode launcher. It starts Steam with -steamdeck parameters inside a Gamescope window, optimized for 1080p @ 120Hz with MangoHud and Adaptive Sync.
+  The Game Mode launcher. It starts Steam with -steamdeck parameters inside a Gamescope standalone session.
 
 . steamos-session-select:
   A quick wrapper to call the system session selector and return to Plasma.
 
 Prerequisites :
+Before installing, ensure your system meets these requirements:
 
-.  Operating System: Arch Linux or
+Operating System: Arch Linux or EndeavourOS (or any Arch-based distro).
+
+Desktop Environment: KDE Plasma (Required for the plasma session target).
+
+Display Manager: SDDM (Required for the autologin switching logic).
+
+Essential Packages:
+
+gamescope: The micro-compositor for the Game Mode.
+
+steam: Ensure it's the official version.
+
+mangohud: (Optional) For performance monitoring.
