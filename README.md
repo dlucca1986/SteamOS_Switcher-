@@ -26,6 +26,29 @@ If you love the Steam Deck gaming experience as much as I do, you’re in the ri
 * **📦 Optimized for Arch-based Distros**
   Specifically tuned for the Arch ecosystem to ensure maximum compatibility and performance.
 
+
+  📖 Documentation & Wiki
+
+For detailed guides and technical information, please visit our Project Wiki. You will find:
+
+    🔑 Sudoers Setup: How to enable passwordless switching (Essential!).
+
+    🏗️ Architecture: How the Master/Helper system works under the hood.
+
+    🛠️ Troubleshooting: Solutions for common issues.
+
+🤝 Acknowledgments & Credits
+
+This project wouldn't have been possible without the amazing work and guides from the Linux gaming community. A special thanks to:
+
+    The SteamOS & Gamescope Teams: For building the foundation of handheld gaming on Linux.
+
+    Community Guides: Big thanks to the developers and enthusiasts on Reddit (r/SteamDeck, r/LinuxGaming) and the Arch Wiki contributors whose guides on session management were fundamental to this project.
+
+    Open Source Contributors: To everyone sharing scripts and ideas to make Linux a better place for gamers.
+
+Built with ❤️ by a gaming fan for the Linux Community. If you like it, leave a ⭐!
+
 ---
 
 ## 🚀 Quick Installation
