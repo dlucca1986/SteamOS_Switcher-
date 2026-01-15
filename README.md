@@ -100,6 +100,7 @@ sudo ./install.sh
 
 ## ⚠️ Mandatory Post-Installation Step
 
-To make the "Switch to Desktop" button work, you must authorize the session scripts to run without a password. Without this step, your system will hang on a black screen when switching.
+This project relies on the ability to switch display manager sessions automatically. Without the Sudoers configuration, the switcher will not function, and your system may hang on a black screen when attempting to change modes.
+You must authorize the session scripts to run without a password to ensure a seamless transition.
 
 - 👉 [Follow the Sudoers Setup Guide here](https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop/wiki/Sudoers-Setup):
