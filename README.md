@@ -48,13 +48,18 @@ For detailed guides and technical information, please visit our Project Wiki.
 
 This project wouldn't have been possible without the amazing work and guides from the Linux gaming community. A special thanks to:
 
-  shahnawazshahin :
-  https://github.com/shahnawazshahin/steam-using-gamescope-guide
-  che ha scritto una meravigliosa guida e ispirato il progetto
+* **[shahnawazshahin](https://github.com/shahnawazshahin/steam-using-gamescope-guide):** For writing a wonderful guide that served as a primary inspiration for this project.
+* **[berturion](https://www.reddit.com/r/archlinux/comments/1p2fmso/comment/nqjvr44/):** For the brilliant technical insights that helped finalize the desktop switching logic.
+* **The SteamOS & Gamescope Teams:** For building the foundation of handheld gaming on Linux.
+* **Community Guides:** Big thanks to the developers and enthusiasts on **Reddit** (r/SteamDeck, r/LinuxGaming) and the **Arch Wiki** contributors.
+* **Open Source Contributors:** To everyone sharing scripts and ideas to make Linux a better place for gamers. 
 
-  Community Guides: Big thanks to the developers and enthusiasts on Reddit (r/SteamDeck, r/LinuxGaming) and the Arch Wiki contributors.
+---
 
-  Open Source Contributors: To everyone sharing scripts and ideas to make Linux a better place for gamers.
+## ❤️ Support the Project
+
+Built with ❤️ by a gaming fan for the Linux Community.  
+**If you like this project, please leave a ⭐ Star on GitHub!** It helps other gamers find it.
 
 ## ❤️ Support the Project
 
