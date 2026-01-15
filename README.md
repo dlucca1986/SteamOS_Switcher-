@@ -35,3 +35,13 @@ git clone https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-
 cd SteamOS-Like-Session-Switcher-for-Linux-Desktop
 chmod +x install.sh
 sudo ./install.sh
+
+## 🤝 Acknowledgments & Credits
+
+This project wouldn't have been possible without the amazing work and guides from the Linux gaming community. A special thanks to:
+
+* **The SteamOS & Gamescope Teams:** For building the foundation of handheld gaming on Linux.
+* **Community Guides:** Big thanks to the developers and enthusiasts on **Reddit** (r/SteamDeck, r/LinuxGaming) and the **Arch Wiki** contributors whose guides on session management were fundamental to this project.
+* **Open Source Contributors:** To everyone sharing scripts and ideas to make Linux a better place for gamers. 
+
+---
