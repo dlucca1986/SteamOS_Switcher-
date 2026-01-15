@@ -1,1 +1,38 @@
+#!/bin/bash
 
+# --- SESSION SELECTOR ---
+# This script handles the transition between Desktop and Gaming Mode.
+# It identifies the target session file and updates the SDDM autologin.
+
+SESSION_NAME=$1
+# Automatically detects the current logged-in user
+USER_NAME=$(whoami)
+
+if [[ "$SESSION_NAME" == "plasma" ]]; then
+    # Target the KDE Plasma Wayland session file
+    SESSION_FILE="/usr/share/wayland-sessions/plasma.desktop"
+
+    # Properly shutdown Steam to ensure cloud saves are synced
+    echo "Shutting down Steam..."
+    steam -shutdown &> /dev/null || true
+
+    # Update SDDM configuration via the helper script
+    sudo /usr/local/bin/set-sddm-session "$SESSION_FILE" "$USER_NAME"
+
+elif [[ "$SESSION_NAME" == "gamescope-session-steam" ]]; then
+    # Path to the session desktop file that SDDM will load
+    SESSION_FILE="/usr/share/wayland-sessions/steam.desktop"
+
+    echo "Preparing Gaming Mode..."
+    # Execute the helper script to update the SDDM autologin configuration
+    sudo /usr/local/bin/set-sddm-session "$SESSION_FILE" "$USER_NAME"
+
+else
+    # Error message if the argument is missing or incorrect
+    echo "Unknown session: $SESSION_NAME"
+    exit 1
+fi
+
+# Terminate the current user session to trigger the SDDM restart and autologin
+echo "Switching session for $USER_NAME now..."
+loginctl terminate-user "$USER_NAME"
