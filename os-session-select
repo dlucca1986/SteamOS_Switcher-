@@ -20,10 +20,12 @@ if [[ "$SESSION_NAME" == "plasma" ]]; then
     sudo /usr/local/bin/set-sddm-session "$SESSION_FILE" "$USER_NAME"
 
 elif [[ "$SESSION_NAME" == "gamescope-session-steam" ]]; then
-    # Target the Steam Deck UI session file (Gamescope)
+    # Path to the session desktop file that SDDM will load.
+    # Ensure 'steam.desktop' exists in /usr/share/wayland-sessions/
     SESSION_FILE="/usr/share/wayland-sessions/steam.desktop"
     
-    # Update SDDM configuration to boot into Gaming Mode
+    echo "Preparing Gaming Mode..."
+    # Execute the helper script to update the SDDM autologin configuration
     sudo /usr/local/bin/set-sddm-session "$SESSION_FILE" "$USER_NAME"
 
 else
