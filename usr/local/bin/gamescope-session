@@ -1,58 +1,61 @@
 #!/bin/bash
-
 # ==============================================================================
-# GAMESCOPE SESSION LAUNCHER
-# ==============================================================================
-# This script launches Steam in "Deck UI" mode using the Gamescope compositor.
-# It is designed to run as a standalone session from SDDM.
+# Gamescope Session Launcher
 # ==============================================================================
 
-# --- DISPLAY CONFIGURATION ---
-# Set your monitor's native resolution and refresh rate
-OUTPUT_WIDTH=1920
-OUTPUT_HEIGHT=1080
+# --- USER CONFIGURATION ---
+# Target physical monitor resolution (Output signal)
+TARGET_WIDTH=1920
+TARGET_HEIGHT=1080
+
+# Target refresh rate (Crucial for frame-pacing on high-refresh panels)
 REFRESH_RATE=120
 
-# --- SCALING & FILTERS ---
-# Scaler: auto, integer, fit, fill, stretch
-# Filter: linear, nearest, fsr, nis, pixel
-SCALER="fill"
-FILTER="fsr"
-FSR_SHARPNESS=2
+# Video Features (1=Enabled, 0=Disabled)
+ENABLE_HDR=1       # High Dynamic Range (Requires RDNA2+ and compatible display)
+ENABLE_VRR=1       # Adaptive Sync / FreeSync (Eliminates tearing without input lag)
+ENABLE_MANGOAPP=1  # Performance Overlay (Requires 'mangoapp' package)
 
-# --- PERFORMANCE & FEATURES ---
-# Enable Adaptive Sync (Variable Refresh Rate)
-ADAPTIVE_SYNC="--adaptive-sync"
-# Enable Immediate Flips (Lower latency, might cause tearing)
-IMMEDIATE_FLIPS="--immediate-flips"
-# MangoHud performance overlay (requires mangoapp installed)
-MANGO_HUD="--mangoapp"
+# Debug Logging (Useful for troubleshooting Steam or Gamescope crashes)
+LOG_FILE="/tmp/gamescope-session.log"
+# --------------------------
 
-# --- PATHS ---
-# Automatically detects the current user's MangoHud config
-MANGOHUD_CONFIG="$HOME/.config/MangoHud/MangoHud.conf"
+# Silent redirection: send STDOUT and STDERR to log file
+exec > "$LOG_FILE" 2>&1
 
-# ==============================================================================
-# EXECUTION
-# ==============================================================================
+# --- ENVIRONMENT VARIABLES (EXPORTS) ---
+# Informs graphical toolkits (SDL, Qt, GTK) to use the Wayland backend
+export XDG_SESSION_TYPE=wayland
 
-# Check if MangoHud config exists, otherwise use default
-if [ ! -f "$MANGOHUD_CONFIG" ]; then
-    MANGOHUD_CONFIGFILE=""
-else
-    export MANGOHUD_CONFIGFILE="$MANGOHUD_CONFIG"
-fi
+# Identifies the session as Gamescope for proper window management/compatibility
+export XDG_CURRENT_DESKTOP=gamescope
 
-exec gamescope \
-    -W $OUTPUT_WIDTH \
-    -H $OUTPUT_HEIGHT \
-    -r $REFRESH_RATE \
-    -S $SCALER \
-    -F $FILTER \
-    --fsr-sharpness $FSR_SHARPNESS \
-    $ADAPTIVE_SYNC \
-    $IMMEDIATE_FLIPS \
-    $MANGO_HUD \
-    -e \
-    -- \
-    steam -steamdeck -steamos3
+# Automatically enables Feral GameMode for all child processes (CPU/GPU optimizations)
+export GAMEMODE_AUTO=1
+
+
+# --- GAMESCOPE ARGUMENTS CONSTRUCTION ---
+# --output-width / --output-height: Defines the physical output resolution signal
+# --refresh: Forces the vertical refresh rate to the specified target
+ARGS=(
+    --output-width "$TARGET_WIDTH"
+    --output-height "$TARGET_HEIGHT"
+    --refresh "$REFRESH_RATE"
+)
+
+# --hdr-enabled: Enables 10-bit HDR metadata passthrough
+[[ $ENABLE_HDR -eq 1 ]]      && ARGS+=(--hdr-enabled)
+
+# --adaptive-sync: Syncs monitor refresh cycles with GPU frame delivery (FreeSync/VRR)
+[[ $ENABLE_VRR -eq 1 ]]      && ARGS+=(--adaptive-sync)
+
+# --mangoapp: Launches a dedicated performance HUD instance within the compositor
+[[ $ENABLE_MANGOAPP -eq 1 ]] && ARGS+=(--mangoapp)
+
+
+# --- EXECUTION ---
+# -e: "Steam Mode" - Enables multi-window management and Guide button integration
+# --: Separator between Gamescope flags and the application command
+# steam -steamdeck: Launches Steam in "Game Mode" handheld-optimized UI
+# -steamos3: Emulates the SteamOS 3 environment to unlock specific system menus
+exec gamescope "${ARGS[@]}" -e -- steam -steamdeck -steamos3
