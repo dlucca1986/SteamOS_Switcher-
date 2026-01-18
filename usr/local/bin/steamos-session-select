@@ -1,5 +1,34 @@
 #!/bin/bash
-# This script is called by Steam's "Switch to Desktop" button.
-# It redirects the command to our main switcher.
+# ==============================================================================
+# SteamOS Return-to-Desktop Manager
+# Restores the default SDDM session by removing the autologin override.
+# ==============================================================================
 
-/usr/local/bin/steamos-session-select plasma
+# 1. PRIVILEGE ESCALATION
+# Re-execute via sudo if not root, leveraging the steamos-switcher sudoers rule.
+if [ "$EUID" -ne 0 ]; then
+    exec sudo "$0" "$@"
+fi
+
+# 2. SILENT LOGGING
+# Redirecting output to a log file for background troubleshooting.
+LOG_FILE="/tmp/steamos-return.log"
+exec > "$LOG_FILE" 2>&1
+
+# 3. CLEANUP
+# Remove the autologin configuration and sync to disk.
+if [ -f "/etc/sddm.conf.d/zz-steamos-autologin.conf" ]; then
+    rm -f /etc/sddm.conf.d/zz-steamos-autologin.conf
+    sync
+fi
+
+# 4. SYSTEMD-RUN MANEUVER (Enhanced)
+# We use systemd-run to decouple the restart from the current session.
+# This ensures the Display Manager restarts correctly even if this script
+# is terminated during the session teardown.
+systemd-run --unit=steamos-return --scope bash -c "
+    sleep 1
+    systemctl restart sddm
+" &
+
+exit 0
