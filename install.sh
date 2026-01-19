@@ -162,6 +162,7 @@ EOF
     success "Pacman hook created: Gamescope will keep its permissions after updates."
 }
 
+
 # --- Main Execution ---
 clear
 echo -e "${BLUE}==========================================${NC}"
@@ -176,7 +177,9 @@ deploy_scripts
 configure_security
 configure_sddm
 optimize_performance
+setup_pacman_hook  # <--- DEVI AGGIUNGERE QUESTA RIGA
 
 echo
 success "Installation completed successfully!"
+info "Note: You might need to restart SDDM or reboot to apply all changes."
 info "Note: You might need to restart SDDM or reboot to apply all changes."
