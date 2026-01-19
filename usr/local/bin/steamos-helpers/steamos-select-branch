@@ -6,6 +6,7 @@
 # Description: Compatibility shim for SteamOS update channels (Stable/Beta/Main).
 #              On DIY systems, updates are managed via standard pacman mirrors.
 #              This script ensures UI compatibility within the Steam Client.
+# Path:        /usr/local/bin/steamos-helpers/steamos-select-branch
 # =============================================================================
 
 # --- Configuration & Styling ---
