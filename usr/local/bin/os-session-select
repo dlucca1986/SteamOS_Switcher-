@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# SteamMachine DIY - Core Session Manager
+# SteamOs_Switcher - Core Session Manager
 # =============================================================================
 # Script: os-session-select
 # Description: Centralized logic for switching between Gaming Mode (Gamescope)
