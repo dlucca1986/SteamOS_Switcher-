@@ -25,11 +25,9 @@ If you love the Steam Deck gaming experience as much as I do, you’re in the ri
 * **🎮 Pure Console Experience**:
   Pre-configured for **1080p/120Hz** with **HDR** and **Adaptive Sync (VRR)** out of the box.
 
-* **🛡️ Professional & Clean Architecture**:
-  The project follows a **"Master/Helper" structure**. No system files are harmed; everything is handled via transparent Bash scripts in `/usr/local/bin`.
-
 * **🔴 Performance Ready**:
   Integrated with **Feral GameMode** and **MangoHud** for real-time monitoring and maximum CPU priority.
+
 
 ---
 
@@ -68,14 +66,10 @@ Built with ❤️ by a gaming fan for the Linux Community.
 
 ## 🛠️ Prerequisites:
 
-* **GPU**: AMD Radeon (Required for full compatibility with these scripts).
+* **GPU**: AMD Radeon (Required for full compatibility and RADV features).
 * **Desktop Environment**: KDE Plasma (6.x recommended).
-* **Display Manager**: SDDM (The logic is optimized for SDDM session switching).
-* **Software**:
-
-```bash
-sudo pacman -S steam gamescope mangohud lib32-mangohud gamemode
-```
+* **Display Manager**: SDDM (Required for session switching logic).
+* **Core Software**: `steam`, `gamescope`, `mangohud`, `gamemode`.
 
 
 ---
@@ -89,28 +83,26 @@ To get started, copy and paste these commands into your terminal:
 git clone https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git
 cd SteamOS-Like-Session-Switcher-for-Linux-Desktop
 chmod +x install.sh
-sudo ./install.sh
-
+./install.sh
 ```
 
+- 💡 Note: The installer is interactive and will automatically verify your AMD hardware, install missing dependencies, and configure the necessary system permissions.
+
+## 🛡️ Clean Architecture & Safety :
+
+I value your system's integrity. This project is designed to be as non-intrusive as possible:
+
+- No Overwriting: This project does not modify core system files; it uses /usr/local/bin and dedicated config directories.
+
+- Transparent Sudoers: A minimal rule is added to /etc/sudoers.d/ only for the session-switching logic.
+
+- Full Reversibility: Every change made by the installer can be undone using the uninstaller.
 
 ---
 
-
-
-Clean Install/Uninstall: I value your system's integrity. The installer provides a dedicated uninstaller script that reverts every change, including sudoers rules and symbolic links.
-
-
-## ⚠️ Mandatory Post-Installation Step
-
-> "To achieve a seamless transition between Gaming Mode and Desktop, the session switcher requires permission to communicate with your Display Manager (SDDM) without a password prompt. Without this configuration, the 'Switch' command will fail. For security and stability, please follow the automated Sudoers setup."
-
-* 👉 **Action Required**: [Follow the Sudoers Setup Guide here](https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop/wiki/Sudoers-Setup)
-
----
 
 ## 🗑️ Uninstallation
-To completely remove the switcher and all its configurations:
+If you wish to revert all changes, I’ve included a dedicated uninstaller. It will completely remove all scripts, symbolic links, desktop shortcuts, and the sudoers rule:
 ```bash
 chmod +x uninstall.sh
 sudo ./uninstall.sh
