@@ -182,4 +182,4 @@ setup_pacman_hook  # <--- DEVI AGGIUNGERE QUESTA RIGA
 echo
 success "Installation completed successfully!"
 info "Note: You might need to restart SDDM or reboot to apply all changes."
-info "Note: You might need to restart SDDM or reboot to apply all changes."
+
