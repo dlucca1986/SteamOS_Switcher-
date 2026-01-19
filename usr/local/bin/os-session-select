@@ -1,10 +1,4 @@
 #!/bin/bash
-# ==============================================================================
-# SteamOS / Plasma Session Switcher
-# Logic handler for seamless transitions and cloud sync preservation.
-# ==============================================================================
-
-# Silent redirection to log file for background troubleshooting
 LOG_FILE="/tmp/os-session-select.log"
 exec > "$LOG_FILE" 2>&1
 
@@ -16,25 +10,17 @@ case "$SESSION_INPUT" in
         SESSION_FILE="plasma" 
         pkill -u "$USER_NAME" -TERM steam 2>/dev/null
         sleep 1
-        steam -shutdown &>/dev/null || true
         ;;
-
     "gamescope-session-steam"|"steam"|"gaming"|"steamos")
-        SESSION_FILE="steamos-switcher"
+        SESSION_FILE="gamescope-session"
         ;;
-
-    *)
-        exit 1
-        ;;
+    *) exit 1 ;;
 esac
 
-# Update SDDM configuration via the privileged helper script
+# Chiama il binario che si trova ora direttamente in /usr/local/bin/
 sudo /usr/local/bin/set-sddm-session "$SESSION_FILE" "$USER_NAME"
 
-# Check execution status and terminate session
 if [ $? -eq 0 ]; then
     sync
     loginctl terminate-user "$USER_NAME"
-else
-    exit 1
 fi
