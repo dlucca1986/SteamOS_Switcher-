@@ -2,7 +2,7 @@
 # =============================================================================
 # SteamOs_Switcher - Session Restoration Manager
 # =============================================================================
-# Script: steamos-return
+# Script: steamos-session-select
 # Description: Restores the default desktop session by removing autologin 
 #              overrides and restarting the display manager.
 # Path:        /usr/local/bin/steamos-return
