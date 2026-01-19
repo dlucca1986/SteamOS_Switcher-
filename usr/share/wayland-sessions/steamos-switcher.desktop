@@ -4,3 +4,5 @@ Comment=Launch Steam in Gamescope (Gaming Mode)
 Exec=/usr/local/bin/steamos-session-launch
 Type=Application
 DesktopNames=Gamescope
+X-KDE-Wayland-Interfaces=zkwin_system_bell_v1
+Icon=steam
