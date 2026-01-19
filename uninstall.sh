@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# SteamOS Switcher - Professional Uninstaller
+# SteamOS Switcher - Uninstaller
 # ==============================================================================
 set -e
 
@@ -8,7 +8,7 @@ echo "------------------------------------------------"
 echo "   Removing SteamOS Switcher Components... 🗑️    "
 echo "------------------------------------------------"
 
-# 1. Rimozione Sudoers (Fondamentale per la sicurezza)
+# 1. Sudoers Removal (Crucial for security)
 echo "[1/5] Removing Sudoers rules..."
 SUDOERS_FILE="/etc/sudoers.d/steamos-switcher"
 if [ -f "$SUDOERS_FILE" ]; then
@@ -16,7 +16,7 @@ if [ -f "$SUDOERS_FILE" ]; then
     echo "   ✅ Sudoers rule removed."
 fi
 
-# 2. Rimozione Link Simbolici
+# 2. Symbolic Links Removal
 echo "[2/5] Cleaning system symbolic links..."
 SYMLINKS=(
     "/usr/bin/os-session-select"
@@ -31,13 +31,14 @@ for link in "${SYMLINKS[@]}"; do
     fi
 done
 
-# 3. Rimozione file di sistema
+# 3. System Files Removal
 echo "[3/5] Removing system files..."
 sudo rm -rf /usr/bin/steamos-polkit-helpers
 sudo rm -rf /usr/share/steamos-switcher
-sudo rm -f /usr/share/wayland-sessions/steam-wayland.desktop # Assicurati che il nome coincida
+# Ensure this filename matches your .desktop session file
+sudo rm -f /usr/share/wayland-sessions/steam.desktop 
 
-# 4. Rimozione Shortcut Desktop
+# 4. Desktop Shortcut Removal
 echo "[4/5] Cleaning desktop shortcuts..."
 DESKTOP_DIRS=("$HOME/Desktop" "$HOME/Scrivania" "$HOME/desktop")
 for dir in "${DESKTOP_DIRS[@]}"; do
@@ -47,9 +48,9 @@ for dir in "${DESKTOP_DIRS[@]}"; do
     fi
 done
 
-# 5. Pulizia Binari in /usr/local/bin
+# 5. Final Cleanup in /usr/local/bin
 echo "[5/5] Final cleanup in /usr/local/bin..."
-# Rimuoviamo solo i file specifici del progetto per sicurezza
+# Removing only project-specific files for safety
 sudo rm -f /usr/local/bin/os-session-select
 sudo rm -f /usr/local/bin/steamos-update
 sudo rm -f /usr/local/bin/jupiter-biosupdate
