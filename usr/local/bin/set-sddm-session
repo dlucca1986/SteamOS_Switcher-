@@ -1,43 +1,24 @@
 #!/bin/bash
-# ==============================================================================
-# SDDM Autologin Manager
-# Privileged script to update SDDM configurations and restart the Display Manager.
-# Must be executed with sudo/root privileges.
-# ==============================================================================
-
-# Extract session name and username from arguments
 SESSION_NAME=$(basename "${1:-plasma}" .desktop)
 USER_NAME="${2:-$USER}"
 
-# 1. SDDM CONFIGURATION UPDATE
-# Create/Overwrite the autologin override file
+# Scrittura autologin
 cat > "/etc/sddm.conf.d/zz-steamos-autologin.conf" <<EOF
 [Autologin]
 User=$USER_NAME
 Session=$SESSION_NAME
 EOF
-
-# Ensure the configuration is written to disk
 sync
 
-# 2. DETACHED SYSTEMD EXECUTION
-# Using systemd-run to ensure the Display Manager restart survives the
-# termination of the current user session.
-systemd-run --unit=steamos-switcher --scope bash -c "
-    # Silent logging for background troubleshooting
+# Riavvio pulito di SDDM
+systemd-run --unit=steamos-restart --scope bash -c "
     exec > /tmp/switch.log 2>&1
-
-    # Graceful delay to allow the calling script to finalize
     sleep 2
     systemctl stop sddm
-
-    # Cleanup legacy X11/Wayland sockets and locks to prevent display conflicts
-    pkill -9 Xorg
-    pkill -9 Xwayland
-    rm -f /tmp/.X11-unix/X0 /tmp/.X0-lock
-
+    pkill -9 Xorg || true
+    pkill -9 Xwayland || true
+    rm -rf /tmp/.X11-unix/X*
     sleep 1
     systemctl start sddm
 " &
-
 exit 0
