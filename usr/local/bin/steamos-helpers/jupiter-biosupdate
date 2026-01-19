@@ -7,6 +7,7 @@
 #              On DIY systems, hardware updates are handled by the host OS 
 #              or motherboard vendor. This script prevents errors during 
 #              SteamOS session transitions.
+# Path:        /usr/local/bin/steamos-helpers/jupiter-biosupdate
 # =============================================================================
 
 # Colors for professional CLI output
