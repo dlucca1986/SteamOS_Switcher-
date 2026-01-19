@@ -1,4 +1,4 @@
-# 🎮 SteamOS Switcher for Desktop/Laptop
+# 🎮 SteamOS Switcher for Desktop/Laptop ( Full Amd Build )
 
 
 > ### "Bringing the Seamless SteamOS Experience to any Linux Distribution (Arch-based)" 🚀
@@ -20,20 +20,16 @@ If you love the Steam Deck gaming experience as much as I do, you’re in the ri
 ## ✨ Key Features
 
 * **🔄 Seamless Session Switching**:
-* No more clunky menus! This enables the **"Switch to Desktop"** button directly from a standalone gamescope-session, just like on a real Steam Deck. It takes you straight to your KDE Desktop without stopping at the login screen.
+  Native support for the **"Switch to Desktop"** button. Transition between Gamescope and KDE Plasma without ever seeing a login screen or typing a password.
 
-  
-* **🛡️ Clean & Safe Architecture**:
-* I care about your OS! Instead of overwriting critical system files, I use a **"Master/Helper" structure** in `/usr/local/bin`. Everything is handled by transparent, easy-to-read **Bash scripts**, making it professional, safe, and keeping your system clutter-free.
+* **🎮 Pure Console Experience**:
+  Pre-configured for **1080p/120Hz** with **HDR** and **Adaptive Sync (VRR)** out of the box.
 
+* **🛡️ Professional & Clean Architecture**:
+  The project follows a **"Master/Helper" structure**. No system files are harmed; everything is handled via transparent Bash scripts in `/usr/local/bin`.
 
-* **🖱️ One-Click Return to Gaming Mode**: 
-* I’ve included a handy desktop shortcut! You’ll find a **"Return to Gaming Mode"** icon right on your KDE desktop, so you can jump back into your library with just one click.
-
-
-* **📦 Optimized for Arch-based Distros**: 
-* Specifically tuned for the Arch ecosystem to ensure maximum compatibility and performance.
-
+* **🔴 Performance Ready**:
+  Integrated with **Feral GameMode** and **MangoHud** for real-time monitoring and maximum CPU priority.
 
 ---
 
@@ -72,10 +68,13 @@ Built with ❤️ by a gaming fan for the Linux Community.
 
 ## 🛠️ Prerequisites:
 
-Before installing, make sure you have the core components installed. On Arch Linux, you can install them with:
+* **GPU**: AMD Radeon (Required for full compatibility with these scripts).
+* **Desktop Environment**: KDE Plasma (6.x recommended).
+* **Display Manager**: SDDM (The logic is optimized for SDDM session switching).
+* **Software**:
 
 ```bash
-sudo pacman -S steam gamescope mangohud lib32-mangohud
+sudo pacman -S steam gamescope mangohud lib32-mangohud gamemode
 ```
 
 
@@ -100,10 +99,9 @@ sudo ./install.sh
 
 ## ⚠️ Mandatory Post-Installation Step
 
-This project relies on the ability to switch display manager sessions automatically. Without the Sudoers configuration, the switcher will not function, and your system may hang on a black screen when attempting to change modes.
-You must authorize the session scripts to run without a password to ensure a seamless transition.
+> "To achieve a seamless transition between Gaming Mode and Desktop, the session switcher requires permission to communicate with your Display Manager (SDDM) without a password prompt. Without this configuration, the 'Switch' command will fail. For security and stability, please follow the automated Sudoers setup."
 
-- 👉 [Follow the Sudoers Setup Guide here](https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop/wiki/Sudoers-Setup):
+* 👉 **Action Required**: [Follow the Sudoers Setup Guide here](https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop/wiki/Sudoers-Setup)
 
 ---
 
