@@ -1,48 +1,40 @@
 #!/bin/bash
 # ==============================================================================
 # SteamOS / Plasma Session Switcher
-# Handles transition logic and ensures cloud sync before logout.
+# Logic handler for seamless transitions and cloud sync preservation.
 # ==============================================================================
 
-# Redirect all output to log file for background troubleshooting
+# Silent redirection to log file for background troubleshooting
 LOG_FILE="/tmp/os-session-select.log"
 exec > "$LOG_FILE" 2>&1
 
-SESSION_INPUT=$1
+SESSION_INPUT=${1:-"steam"}
 USER_NAME=$(id -un)
-
-# Basic validation
-[[ -z "$SESSION_INPUT" ]] && exit 1
-
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Switch initiated: $SESSION_INPUT"
 
 case "$SESSION_INPUT" in
     "plasma"|"desktop")
-        SESSION_FILE="plasma"
-        #Steam shutdown to trigger Cloud Sync
+        SESSION_FILE="plasma" 
         pkill -u "$USER_NAME" -TERM steam 2>/dev/null
         sleep 1
         steam -shutdown &>/dev/null || true
         ;;
 
-    "gamescope-session-steam"|"steam"|"gaming")
-        SESSION_FILE="steam"
+    "gamescope-session-steam"|"steam"|"gaming"|"steamos")
+        SESSION_FILE="steamos-switcher"
         ;;
 
     *)
-        echo "Error: Invalid session input '$SESSION_INPUT'" >> "$LOG_FILE"
         exit 1
         ;;
 esac
 
-# Update SDDM configuration (Calls the privileged helper script)
+# Update SDDM configuration via the privileged helper script
 sudo /usr/local/bin/set-sddm-session "$SESSION_FILE" "$USER_NAME"
 
-# Check execution status
+# Check execution status and terminate session
 if [ $? -eq 0 ]; then
     sync
     loginctl terminate-user "$USER_NAME"
 else
-    echo "Critical: SDDM configuration update failed" >> "$LOG_FILE"
     exit 1
 fi
