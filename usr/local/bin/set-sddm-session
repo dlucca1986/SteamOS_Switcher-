@@ -1,24 +1,60 @@
 #!/bin/bash
+# =============================================================================
+# SteamOs_Switcher - SDDM Session & Autologin Handler
+# =============================================================================
+# Script: set-sddm-session
+# Description: Privileged helper to update SDDM autologin configuration and
+#              perform a clean restart of the display manager.
+# Path:        /usr/local/bin/set-sddm-session
+# Security:    Requires root privileges (meant to be called via sudoers)
+# =============================================================================
+
+set -e
+
+# --- Configuration ---
+readonly SDDM_CONF="/etc/sddm.conf.d/zz-steamos-autologin.conf"
+readonly RESTART_LOG="/tmp/sddm-restart.log"
+
+# Input Handling
 SESSION_NAME=$(basename "${1:-plasma}" .desktop)
 USER_NAME="${2:-$USER}"
 
-# Scrittura autologin
-cat > "/etc/sddm.conf.d/zz-steamos-autologin.conf" <<EOF
+# --- 1. Persistent Configuration ---
+# Writing the autologin override for the next boot/restart
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Updating SDDM autologin: User=$USER_NAME, Session=$SESSION_NAME"
+
+cat <<EOF | sudo tee "$SDDM_CONF" > /dev/null
 [Autologin]
 User=$USER_NAME
 Session=$SESSION_NAME
 EOF
+
+# Ensure data is committed to storage
 sync
 
-# Riavvio pulito di SDDM
-systemd-run --unit=steamos-restart --scope bash -c "
-    exec > /tmp/switch.log 2>&1
+# --- 2. Clean Service Restart ---
+# We use systemd-run to detach the restart process from the current session.
+# This prevents the script from being killed when SDDM stops.
+
+systemd-run --unit=steamos-sddm-restart --description="SteamOs_Switcher: SDDM Restart" --scope bash -c "
+    exec > '$RESTART_LOG' 2>&1
+    
+    echo 'Starting clean display manager reset...'
     sleep 2
+    
+    # Stopping SDDM and cleaning up stale display sockets
     systemctl stop sddm
+    
+    echo 'Cleaning up X11/Wayland remnants...'
     pkill -9 Xorg || true
     pkill -9 Xwayland || true
     rm -rf /tmp/.X11-unix/X*
+    
     sleep 1
+    
+    echo 'Re-launching SDDM with new configuration...'
     systemctl start sddm
 " &
+
+# Return success to the caller immediately
 exit 0
