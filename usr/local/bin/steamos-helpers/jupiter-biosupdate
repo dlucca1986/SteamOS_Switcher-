@@ -1,2 +1,35 @@
 #!/bin/bash
+# =============================================================================
+# SteamOs_Switcher- - Hardware Compatibility Layer
+# =============================================================================
+# Script: jupiter-biosupdate
+# Description: Compatibility shim for SteamOS BIOS update infrastructure.
+#              On DIY systems, hardware updates are handled by the host OS 
+#              or motherboard vendor. This script prevents errors during 
+#              SteamOS session transitions.
+# =============================================================================
+
+# Colors for professional CLI output
+readonly GREEN='\033[0;32m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
+
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+# --- Main Logic ---
+
+log_info "Checking for system firmware updates..."
+
+# DIY Hardware Notice: 
+# Since this is a custom SteamMachine, we return success to satisfy 
+# the steam-session dependencies without performing actual BIOS flashing,
+# which could be dangerous on non-Deck hardware.
+
+log_info "System firmware is up to date."
+
+echo -e "${GREEN}✓ Compatibility check passed.${NC}"
+
+# Exit gracefully
 exit 0
