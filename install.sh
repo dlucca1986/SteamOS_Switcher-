@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# SteamMachine DIY - Session Switcher Installer
+# Session Switcher Installer
 # Description: Configures Arch Linux to behave like SteamOS (Gaming Mode/Desktop)
 # Repository: https://github.com/dlucca1986/SteamOS_Switcher-
 # =============================================================================
