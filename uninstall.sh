@@ -79,11 +79,19 @@ remove_sddm_configs() {
 }
 
 revert_performance_tweaks() {
-    info "Reverting Gamescope performance capabilities..."
+    info "Reverting Gamescope performance tweaks and automation..."
+    
+    # 1. Rimuove l'Hook di Pacman per le capabilities
+    if [ -f "/etc/pacman.d/hooks/gamescope-capabilities.hook" ]; then
+        sudo rm -f "/etc/pacman.d/hooks/gamescope-capabilities.hook"
+        info "Removed Gamescope Pacman hook."
+    fi
+
+    # 2. Rimuove le capabilities dal binario attuale
     local gpath
     gpath=$(command -v gamescope)
     if [ -x "$gpath" ]; then
-        # Check if capabilities are set before trying to remove
+        # Controlla se le capabilities sono presenti prima di provare a rimuoverle
         if getcap "$gpath" | grep -q 'cap_'; then
             sudo setcap -r "$gpath"
             success "Capabilities removed from $gpath"
