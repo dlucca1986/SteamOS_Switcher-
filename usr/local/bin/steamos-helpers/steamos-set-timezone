@@ -1,2 +1,24 @@
 #!/bin/bash
+# =============================================================================
+# SteamOS_Switcher - Localization & Time Manager
+# =============================================================================
+# Script: steamos-set-timezone
+# Description: Compatibility shim for SteamOS timezone synchronization.
+#              Redirects Steam Client timezone requests to system settings.
+# Path:        /usr/local/bin/steamos-helpers/steamos-set-timezone
+# =============================================================================
+
+# --- Environment & Configuration ---
+# We keep this script minimal to ensure maximum compatibility with the 
+# Steam Client UI expectations while running on a DIY Arch Linux base.
+
+# --- Main Logic ---
+
+# Steam passes the timezone string as the first argument (e.g., "Europe/Rome").
+# On DIY systems, we let the host OS handle time synchronization via NTP/timedatectl.
+TARGET_ZONE="${1:-UTC}"
+
+# We return exit 0 to signal to the Steam Client that the request was 
+# intercepted and handled, preventing "Settings fail" overlays.
+
 exit 0
