@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# SteamOs_Switcher- - Hardware Compatibility Layer
+# SteamOs_Switcher - Hardware Compatibility Layer
 # =============================================================================
 # Script: jupiter-biosupdate
 # Description: Compatibility shim for SteamOS BIOS update infrastructure.
