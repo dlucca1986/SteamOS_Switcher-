@@ -39,8 +39,7 @@ I developed this project to faithfully simulate the **SteamOS ecosystem** on sta
 
 ## 📖 Documentation & Wiki:
 
-* **For detailed guides and technical information, please visit our Project Wiki.**
-* https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop/wiki
+* **For detailed guides and technical information, please visit our Project Wiki.** https://github.com/dlucca1986/SteamMachine-DIY/wiki
 
 
 ---
@@ -86,10 +85,12 @@ Built with ❤️ by a gaming fan for the Linux Community.
 To get started, copy and paste these commands into your terminal:
 
 ```bash
-git clone https://github.com/dlucca1986/SteamOS-Like-Session-Switcher-for-Linux-Desktop.git
-cd SteamOS-Like-Session-Switcher-for-Linux-Desktop
-chmod +x install.sh
-./install.sh
+Clone the repository:
+   `git clone https://github.com/dlucca1986/SteamMachine-DIY.git`
+Enter the folder:
+   `cd SteamMachine-DIY`
+Run the installer:
+   `chmod +x install.sh && ./install.sh`
 ```
 
 - 💡 Note: The installer is interactive and will automatically verify your AMD hardware, install missing dependencies, and configure the necessary system permissions.
