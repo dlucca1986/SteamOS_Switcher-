@@ -1,8 +1,8 @@
 #!/bin/bash
 # =============================================================================
-# Session Switcher Installer
+# SteamMachine-DIY Installer
 # Description: Configures Arch Linux to behave like SteamOS (Gaming Mode/Desktop)
-# Repository: https://github.com/dlucca1986/SteamOS_Switcher-
+# Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # =============================================================================
 
 set -e
@@ -17,10 +17,12 @@ NC='\033[0m' # No Color
 
 # --- Configuration ---
 HELPERS_SOURCE="/usr/local/bin/steamos-helpers"
-HELPERS_LINKS="/usr/bin/steamos-helpers"
+HELPERS_LINKS="/usr/bin/steamos-polkit-helpers"
 SDDM_CONF_DIR="/etc/sddm.conf.d"
 SDDM_WAYLAND_CONF="$SDDM_CONF_DIR/10-wayland.conf"
 SUDOERS_FILE="/etc/sudoers.d/steamos-switcher"
+SESSIONS_DIR="/usr/share/wayland-sessions"
+DATA_DIR="/usr/share/steamos-switcher"
 
 DEPENDENCIES=(
     steam gamescope mangohud lib32-mangohud gamemode 
@@ -72,11 +74,11 @@ install_dependencies() {
 
 setup_directories() {
     info "Creating system directories..."
-    sudo mkdir -p "$HELPERS_SOURCE" "$HELPERS_LINKS" "$SDDM_CONF_DIR"
+    sudo mkdir -p "$HELPERS_SOURCE" "$HELPERS_LINKS" "$SDDM_CONF_DIR" "$SESSIONS_DIR" "$DATA_DIR"
 }
 
 deploy_scripts() {
-    info "Deploying core binaries and helpers..."
+    info "Deploying core binaries, helpers, and desktop entries..."
     
     # Core Binaries
     local core_bins=(os-session-select set-sddm-session steamos-session-launch steamos-session-select)
@@ -86,13 +88,23 @@ deploy_scripts() {
     local helper_scripts=(jupiter-biosupdate steamos-select-branch steamos-set-timezone steamos-update steamos-select-session)
     sudo cp "${helper_scripts[@]}" "$HELPERS_SOURCE/"
 
+    # Desktop Entries
+    if [ -f "steamos-switcher.desktop" ]; then
+        sudo cp "steamos-switcher.desktop" "$SESSIONS_DIR/"
+        info "Installed SDDM session entry."
+    fi
+    if [ -f "GameMode.desktop" ]; then
+        sudo cp "GameMode.desktop" "$DATA_DIR/"
+        info "Installed GameMode desktop template."
+    fi
+
     # Permissions
     sudo chmod +x /usr/local/bin/os-session-select /usr/local/bin/set-sddm-session \
                   /usr/local/bin/steamos-session-launch /usr/local/bin/steamos-session-select
     sudo chmod +x "$HELPERS_SOURCE"/*
     
     # Compatibility Symlinks
-    info "Generating compatibility symlinks..."
+    info "Generating compatibility symlinks in $HELPERS_LINKS..."
     for file in "${helper_scripts[@]}"; do
         sudo ln -sf "$HELPERS_SOURCE/$file" "$HELPERS_LINKS/$file"
     done
@@ -162,7 +174,6 @@ EOF
     success "Pacman hook created: Gamescope will keep its permissions after updates."
 }
 
-
 # --- Main Execution ---
 clear
 echo -e "${BLUE}==========================================${NC}"
@@ -177,9 +188,8 @@ deploy_scripts
 configure_security
 configure_sddm
 optimize_performance
-setup_pacman_hook  # <--- DEVI AGGIUNGERE QUESTA RIGA
+setup_pacman_hook
 
 echo
 success "Installation completed successfully!"
 info "Note: You might need to restart SDDM or reboot to apply all changes."
-
