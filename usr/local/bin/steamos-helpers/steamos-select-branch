@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# SteamOS_Switcher - Release Channel Manager
+# SteamMachine-DIY - Release Channel Manager
 # =============================================================================
 # Script: steamos-select-branch
 # Description: Compatibility shim for SteamOS update channels (Stable/Beta/Main).
