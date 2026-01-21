@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# SteamOS_Switcher - System Update Manager
+# SteamMachine-DIY - System Update Manager
 # =============================================================================
 # Script: steamos-update
 # Description: Compatibility shim for SteamOS OTA update infrastructure.
