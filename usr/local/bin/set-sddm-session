@@ -13,6 +13,7 @@ set -e
 
 # --- Configuration ---
 readonly SDDM_CONF="/etc/sddm.conf.d/zz-steamos-autologin.conf"
+readonly MASTER_LOG="/tmp/steamos-diy.log"
 readonly RESTART_LOG="/tmp/sddm-restart.log"
 
 # Input Handling
@@ -20,9 +21,10 @@ SESSION_NAME=$(basename "${1:-plasma}" .desktop)
 USER_NAME="${2:-$USER}"
 
 # --- 1. Persistent Configuration ---
-# Writing the autologin override for the next boot/restart
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Updating SDDM autologin: User=$USER_NAME, Session=$SESSION_NAME"
+# Log the update to the master log file
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SDDM-Helper] Updating autologin: User=$USER_NAME, Session=$SESSION_NAME" >> "$MASTER_LOG"
 
+# Writing the autologin override
 cat <<EOF | sudo tee "$SDDM_CONF" > /dev/null
 [Autologin]
 User=$USER_NAME
@@ -36,10 +38,10 @@ sync
 # We use systemd-run to detach the restart process from the current session.
 # This prevents the script from being killed when SDDM stops.
 
-systemd-run --unit=steamos-sddm-restart --description="SteamOs_Switcher: SDDM Restart" --scope bash -c "
+systemd-run --unit=steamos-sddm-restart --description="SteamMachine-DIY: SDDM Restart" --scope bash -c "
     exec > '$RESTART_LOG' 2>&1
     
-    echo 'Starting clean display manager reset...'
+    echo '[$(date)] Starting clean display manager reset...'
     sleep 2
     
     # Stopping SDDM and cleaning up stale display sockets
@@ -54,6 +56,9 @@ systemd-run --unit=steamos-sddm-restart --description="SteamOs_Switcher: SDDM Re
     
     echo 'Re-launching SDDM with new configuration...'
     systemctl start sddm
+    
+    # Final confirmation to Master Log
+    echo \"[$(date '+%Y-%m-%d %H:%M:%S')] [SDDM-Helper] SDDM service restart signal sent.\" >> '$MASTER_LOG'
 " &
 
 # Return success to the caller immediately
