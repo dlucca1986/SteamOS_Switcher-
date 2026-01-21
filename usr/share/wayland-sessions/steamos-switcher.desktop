@@ -1,9 +1,10 @@
 [Desktop Entry]
 Name=SteamOS Switcher
 Comment=Launch Steam in Gamescope (Gaming Mode)
-# Puntiamo al binario che configura ed esegue Gamescope
+# Pointing to the binary that configures and executes Gamescope
 Exec=/usr/local/bin/steamos-session-launch
+Icon=steam
+Terminal=false
 Type=Application
 DesktopNames=Gamescope
 X-KDE-Wayland-Interfaces=zkwin_system_bell_v1
-Icon=steam
