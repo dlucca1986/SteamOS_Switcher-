@@ -2,27 +2,32 @@
 # =============================================================================
 # SteamMachine-DIY - Gamescope Session Launcher (Universal Hybrid)
 # =============================================================================
-# Path: /usr/local/bin/steamos-session-launch
+# Description: Orchestrates Gamescope with safe defaults, user overrides, 
+#              and "Power User" argument injection.
+# Path:        /usr/local/bin/steamos-session-launch
 # =============================================================================
 
 # --- 1. Safe Mode Defaults (The "Parachute") ---
+# These values ensure the system boots even if the config is missing or broken.
 TARGET_WIDTH=1920
 TARGET_HEIGHT=1080
 REFRESH_RATE=60
 ENABLE_HDR=0
 ENABLE_VRR=0
 ENABLE_MANGOAPP=1
-CUSTOM_ARGS="" # Vuoto di default
+CUSTOM_ARGS="" # Empty by default
 
 # --- 2. Configuration & Status Logic ---
 USER_CONFIG="$HOME/.config/steamos-diy/config"
 CONFIG_STATUS="SAFE MODE (1080p@60Hz)"
 
 if [ -f "$USER_CONFIG" ]; then
-    # Proviamo a caricare il file. Se c'è un errore di sintassi, source fallisce.
+    # Attempt to load the user config. 
+    # If a syntax error occurs, it falls back to Safe Mode.
     if source "$USER_CONFIG" 2>/dev/null; then
         CONFIG_STATUS="CUSTOM (User settings applied)"
-        # Se l'utente ha usato il "Jolly", passiamo a Power User status
+        
+        # If the user has injected custom flags, elevate status to Power User
         [[ -n "$CUSTOM_ARGS" ]] && CONFIG_STATUS="POWER USER (Custom Args Injected)"
     else
         CONFIG_STATUS="ERROR (Syntax error in config! Falling back to SAFE MODE)"
@@ -40,6 +45,8 @@ echo "Targeting: $CONFIG_STATUS"
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=gamescope
 export GAMEMODE_AUTO=1
+
+# SteamOS Specific overrides
 export STEAM_USE_MANGOAPP=1
 export STEAM_MULTIPLE_XWAYLANDS=1
 
@@ -51,7 +58,7 @@ build_args() {
         --output-width "$TARGET_WIDTH"
         --output-height "$TARGET_HEIGHT"
         --refresh "$REFRESH_RATE"
-        --always-epl
+        --always-epl      # Required for proper Steam Overlay focus
         --hide-cursor-delay 3000
     )
 
@@ -61,8 +68,9 @@ build_args() {
     [[ $ENABLE_MANGOAPP -eq 1 ]] && ARGS+=(--mangoapp)
 
     # --- THE JOLLY (Power User Injection) ---
+    # This allows experts to inject any Gamescope flag directly.
     if [[ -n "$CUSTOM_ARGS" ]]; then
-        # Trasformiamo la stringa in array per gestire gli spazi correttamente
+        # Parse the string into an array to handle spaces and quotes correctly
         read -a INJECTED_ARGS <<< "$CUSTOM_ARGS"
         ARGS+=("${INJECTED_ARGS[@]}")
     fi
@@ -73,8 +81,12 @@ build_args() {
 # --- 5. Execution ---
 
 echo "Final Resolution: ${TARGET_WIDTH}x${TARGET_HEIGHT}@${REFRESH_RATE}Hz"
+
+# Fetch the constructed argument array
 read -a FINAL_ARGS <<< "$(build_args)"
 
-# Launch Gamescope -> Steam
+# Final launch: Gamescope -> Steam
+# -e: Enables Steam Deck interface integration
+# -steamos3: Unlocks SteamOS specific UI menus and features
 exec gamescope "${FINAL_ARGS[@]}" -e -- \
     steam -steamdeck -steamos -steamos3
