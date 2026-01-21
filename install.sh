@@ -1,10 +1,11 @@
 #!/bin/bash
 # =============================================================================
 # SteamMachine-DIY Installer
-# Description: Configures Arch Linux to behave like SteamOS (Gaming Mode/Desktop)
+# Description: Configures Arch Linux to behave like SteamOS
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # =============================================================================
 
+# set -e interrompe lo script al primo errore
 set -e
 
 # --- Environment & Colors ---
@@ -15,31 +16,19 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Determina la cartella sorgente del progetto (indipendentemente da dove lanci lo script)
+# Directory sorgente dello script
 SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # --- Configuration Paths ---
 HELPERS_DEST="/usr/local/bin/steamos-helpers"
-HELPERS_LINKS="/usr/bin/steamos-polkit-helpers"
+HELPERS_LINKS_DIR="/usr/bin/steamos-polkit-helpers"
 SDDM_CONF_DIR="/etc/sddm.conf.d"
 SDDM_WAYLAND_CONF="$SDDM_CONF_DIR/10-wayland.conf"
 SUDOERS_FILE="/etc/sudoers.d/steamos-switcher"
-SESSIONS_DIR="/usr/share/wayland-sessions"
-DATA_DIR="/usr/share/steamos-switcher"
 
 # --- User Config Path ---
 USER_CONFIG_DIR="$HOME/.config/steamos-diy"
 USER_CONFIG_FILE="$USER_CONFIG_DIR/config"
-USER_README_FILE="$USER_CONFIG_DIR/README_PARAMETERS.txt"
-
-# --- Packages Lists ---
-CORE_PKGS=(
-    steam gamescope mangohud lib32-mangohud gamemode 
-    vulkan-icd-loader lib32-vulkan-icd-loader mesa-utils
-)
-
-AMD_DRIVERS=(vulkan-radeon lib32-vulkan-radeon)
-INTEL_DRIVERS=(vulkan-intel lib32-vulkan-intel)
 
 # --- UI Functions ---
 info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -47,95 +36,83 @@ success() { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
+# Funzione per copia sicura: se fallisce, ferma tutto.
+safe_cp() {
+    if [ -f "$1" ]; then
+        sudo cp "$1" "$2" || error "Failed to copy $1 to $2"
+    elif [ -d "$1" ]; then
+        sudo cp -r "$1/." "$2/" || error "Failed to copy directory $1 to $2"
+    else
+        error "Source missing: $1"
+    fi
+}
+
 # --- Logic Functions ---
 
 check_multilib() {
     info "Checking multilib repository..."
     if ! grep -q "^\[multilib\]" /etc/pacman.conf; then
-        warn "Multilib repository is disabled. Enabling..."
+        info "Enabling multilib..."
         sudo sed -i '/^#\[multilib\]/,+1 s/^#//' /etc/pacman.conf
         sudo pacman -Sy
-        success "Multilib enabled."
-    else
-        success "Multilib is already enabled."
     fi
+    success "Multilib is enabled."
 }
 
 install_dependencies() {
     info "Detecting GPU Hardware and verifying dependencies..."
+    local pkgs=(steam gamescope mangohud lib32-mangohud gamemode vulkan-icd-loader lib32-vulkan-icd-loader mesa-utils)
     
-    local pkgs_to_install=("${CORE_PKGS[@]}")
-    local gpu_info
-    gpu_info=$(lspci | grep -E "VGA|Display")
-
-    if echo "$gpu_info" | grep -iq "AMD"; then
-        success "AMD GPU detected. Adding RADV drivers."
-        pkgs_to_install+=("${AMD_DRIVERS[@]}")
-    elif echo "$gpu_info" | grep -iq "Intel"; then
-        success "Intel GPU detected. Adding ANV drivers."
-        pkgs_to_install+=("${INTEL_DRIVERS[@]}")
-    else
-        warn "Non-AMD/Intel GPU detected. Installing core packages only."
+    if lspci | grep -iq "AMD"; then
+        pkgs+=(vulkan-radeon lib32-vulkan-radeon)
+    elif lspci | grep -iq "Intel"; then
+        pkgs+=(vulkan-intel lib32-vulkan-intel)
     fi
 
-    local missing_pkgs=()
-    for pkg in "${pkgs_to_install[@]}"; do
-        if ! pacman -Qi "$pkg" &> /dev/null; then
-            missing_pkgs+=("$pkg")
-        fi
-    done
-
-    if [ ${#missing_pkgs[@]} -ne 0 ]; then
-        warn "Missing packages: ${missing_pkgs[*]}"
-        sudo pacman -S --needed "${missing_pkgs[@]}"
-    else
-        success "All dependencies satisfied."
-    fi
+    sudo pacman -S --needed --noconfirm "${pkgs[@]}" || error "Failed to install dependencies."
+    success "Dependencies installed."
 }
 
-setup_directories() {
-    info "Creating system directories..."
-    sudo mkdir -p "$HELPERS_DEST" "$SDDM_CONF_DIR" "$SESSIONS_DIR" "$DATA_DIR"
-    sudo mkdir -p "$HELPERS_LINKS"
+deploy_overlay() {
+    info "Deploying system files from repository overlay..."
+    
+    # Crea le directory di base
+    sudo mkdir -p "$HELPERS_DEST" "$HELPERS_LINKS_DIR" "$SDDM_CONF_DIR" "/usr/share/wayland-sessions" "/usr/share/steamos-switcher"
+
+    # Copia l'intera struttura 'usr' dal repo al sistema
+    if [ -d "$SOURCE_DIR/usr" ]; then
+        safe_cp "$SOURCE_DIR/usr" "/usr"
+    else
+        error "Directory 'usr' not found in $SOURCE_DIR. Check repository structure."
+    fi
+
+    # Rendi i binari eseguibili
+    sudo chmod +x /usr/local/bin/os-session-select
+    sudo chmod +x /usr/local/bin/set-sddm-session
+    sudo chmod +x /usr/local/bin/steamos-session-launch
+    sudo chmod +x /usr/local/bin/steamos-session-select
+    sudo chmod +x "$HELPERS_DEST"/*
+
+    # Creazione dei Simlink per i Polkit Helpers
+    info "Creating compatibility symlinks..."
+    for helper in "$HELPERS_DEST"/*; do
+        name=$(basename "$helper")
+        sudo ln -sf "$helper" "$HELPERS_LINKS_DIR/$name" || error "Failed to link $name"
+    done
+
+    # Shortcut sul Desktop dell'utente
+    if [ -f "/usr/share/steamos-switcher/GameMode.desktop" ]; then
+        cp "/usr/share/steamos-switcher/GameMode.desktop" "$HOME/Desktop/" 2>/dev/null || true
+        chmod +x "$HOME/Desktop/GameMode.desktop" 2>/dev/null || true
+    fi
+    success "System overlay deployed successfully."
 }
 
 setup_user_config() {
-    info "Setting up user configuration in $USER_CONFIG_DIR..."
+    info "Setting up user configuration..."
     mkdir -p "$USER_CONFIG_DIR"
-
-    cat << 'EOF' > "$USER_README_FILE"
-===========================================================
-            STEAM MACHINE DIY - PARAMETERS GUIDE
-===========================================================
-
-You can modify the 'config' file with the following values:
-
-BASE VALUES:
-- TARGET_WIDTH     : Horizontal resolution (e.g., 1920, 1280)
-- TARGET_HEIGHT    : Vertical resolution (e.g., 1080, 720)
-- REFRESH_RATE     : Frequency in Hz (e.g., 60, 120, 144)
-
-TOGGLES (1 = On, 0 = Off):
-- ENABLE_HDR       : Enable HDR (Requires compatible monitor)
-- ENABLE_VRR       : Enable Variable Refresh Rate
-- ENABLE_MANGOAPP  : Enable the Steam performance overlay
-
-POWER USERS:
-- CUSTOM_ARGS      : Additional Gamescope flags (e.g., "--upscaler fsr")
-
------------------------------------------------------------
-SAFETY WATCHDOG:
-In case of a crash, the file will be renamed to 'config.broken'.
-The system will trigger a "Naked Recovery" session using 
-native hardware negotiation.
-
-LOGS: Check /tmp/steamos-diy.log for session diagnostics.
-===========================================================
-EOF
-
     if [ ! -f "$USER_CONFIG_FILE" ]; then
         cat << EOF > "$USER_CONFIG_FILE"
-# SteamMachine-DIY User Configuration
 TARGET_WIDTH=1920
 TARGET_HEIGHT=1080
 REFRESH_RATE=60
@@ -144,54 +121,8 @@ ENABLE_VRR=0
 ENABLE_MANGOAPP=1
 CUSTOM_ARGS=""
 EOF
-        success "Default config created at $USER_CONFIG_FILE"
     fi
-}
-
-deploy_scripts() {
-    info "Deploying core binaries and helpers from $SOURCE_DIR..."
-    
-    # Core Binaries
-    local core_bins=(os-session-select set-sddm-session steamos-session-launch steamos-session-select)
-    for bin in "${core_bins[@]}"; do
-        if [ -f "$SOURCE_DIR/bin/$bin" ]; then
-            sudo cp "$SOURCE_DIR/bin/$bin" /usr/local/bin/
-            sudo chmod +x "/usr/local/bin/$bin"
-            success "Deployed: $bin"
-        else
-            warn "Source missing: bin/$bin"
-        fi
-    done
-    
-    # Helper Scripts (Shims)
-    local helper_scripts=(jupiter-biosupdate steamos-select-branch steamos-set-timezone steamos-update)
-    for helper in "${helper_scripts[@]}"; do
-        if [ -f "$SOURCE_DIR/helpers/$helper" ]; then
-            sudo cp "$SOURCE_DIR/helpers/$helper" "$HELPERS_DEST/"
-            sudo chmod +x "$HELPERS_DEST/$helper"
-            sudo ln -sf "$HELPERS_DEST/$helper" "$HELPERS_LINKS/$helper"
-            success "Deployed Helper: $helper"
-        else
-            warn "Source missing: helpers/$helper"
-        fi
-    done
-
-    # Desktop Resources
-    info "Deploying desktop resources..."
-    
-    # Session entry for SDDM
-    if [ -f "$SOURCE_DIR/resources/steamos-switcher.desktop" ]; then
-        sudo cp "$SOURCE_DIR/resources/steamos-switcher.desktop" "$SESSIONS_DIR/"
-    fi
-
-    # Return to Gaming Mode Icon
-    if [ -f "$SOURCE_DIR/resources/GameMode.desktop" ]; then
-        sudo cp "$SOURCE_DIR/resources/GameMode.desktop" "$DATA_DIR/"
-        # User Shortcut
-        cp "$SOURCE_DIR/resources/GameMode.desktop" "$HOME/Desktop/" 2>/dev/null || true
-        chmod +x "$HOME/Desktop/GameMode.desktop" 2>/dev/null || true
-        success "Desktop shortcut created."
-    fi
+    success "User configuration ready."
 }
 
 configure_security() {
@@ -208,12 +139,18 @@ EOF
     else
         error "Sudoers validation failed."
     fi
-    rm "$temp_sudo"
+    rm -f "$temp_sudo"
+    success "Sudoers configured."
 }
 
 configure_sddm() {
-    info "Applying SDDM Wayland tweaks..."
-    sudo tee "$SDDM_WAYLAND_CONF" > /dev/null <<EOF
+    info "Applying SDDM configuration..."
+    # Copia la configurazione SDDM se presente nell'overlay etc o creala se manca
+    if [ -f "$SOURCE_DIR/etc/sddm.conf.d/10-wayland.conf" ]; then
+        sudo mkdir -p "/etc/sddm.conf.d"
+        safe_cp "$SOURCE_DIR/etc/sddm.conf.d/10-wayland.conf" "$SDDM_WAYLAND_CONF"
+    else
+        sudo tee "$SDDM_WAYLAND_CONF" > /dev/null <<EOF
 [General]
 DisplayServer=wayland
 GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
@@ -221,32 +158,16 @@ GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
 [Wayland]
 CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale POSIX --inputmethod maliit
 EOF
+    fi
+    success "SDDM tweaked for Wayland."
 }
 
 optimize_performance() {
-    info "Optimizing Gamescope performance capabilities..."
-    local gpath=$(command -v gamescope)
+    info "Setting Gamescope capabilities..."
+    local gpath="/usr/bin/gamescope"
     if [ -x "$gpath" ]; then
-        sudo setcap 'cap_sys_admin,cap_sys_nice,cap_ipc_lock+ep' "$gpath"
-        success "Capabilities assigned to $gpath"
+        sudo setcap 'cap_sys_admin,cap_sys_nice,cap_ipc_lock+ep' "$gpath" || warn "Could not set capabilities."
     fi
-}
-
-setup_pacman_hook() {
-    info "Setting up Pacman Hook..."
-    sudo mkdir -p /etc/pacman.d/hooks
-    sudo tee /etc/pacman.d/hooks/gamescope-capabilities.hook > /dev/null <<EOF
-[Trigger]
-Operation = Install
-Operation = Upgrade
-Type = Package
-Target = gamescope
-
-[Action]
-Description = Restoring Gamescope capabilities...
-When = PostTransaction
-Exec = /usr/bin/setcap 'cap_sys_admin,cap_sys_nice,cap_ipc_lock+ep' /usr/bin/gamescope
-EOF
 }
 
 # --- Main Execution ---
@@ -254,19 +175,15 @@ clear
 echo -e "${BLUE}==========================================${NC}"
 echo -e "${GREEN}    SteamMachine DIY - Installer${NC}"
 echo -e "${BLUE}==========================================${NC}"
-echo
 
 check_multilib
 install_dependencies
-setup_directories
+deploy_overlay
 setup_user_config
-deploy_scripts
 configure_security
 configure_sddm
 optimize_performance
-setup_pacman_hook
 
 echo
 success "Installation completed successfully!"
-info "User config: $USER_CONFIG_FILE"
-info "Logs: Check /tmp/steamos-diy.log if the session fails."
+info "Please Logout and select 'SteamMachine' from SDDM."
