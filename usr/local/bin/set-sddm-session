@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# SteamOs_Switcher - SDDM Session & Autologin Handler
+# SteamMachine-DIY - SDDM Session & Autologin Handler
 # =============================================================================
 # Script: set-sddm-session
 # Description: Privileged helper to update SDDM autologin configuration and
