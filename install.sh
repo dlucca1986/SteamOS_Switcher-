@@ -13,10 +13,13 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
+
+# Determina la cartella sorgente del progetto (indipendentemente da dove lanci lo script)
+SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # --- Configuration Paths ---
-HELPERS_SOURCE="/usr/local/bin/steamos-helpers"
+HELPERS_DEST="/usr/local/bin/steamos-helpers"
 HELPERS_LINKS="/usr/bin/steamos-polkit-helpers"
 SDDM_CONF_DIR="/etc/sddm.conf.d"
 SDDM_WAYLAND_CONF="$SDDM_CONF_DIR/10-wayland.conf"
@@ -42,7 +45,7 @@ INTEL_DRIVERS=(vulkan-intel lib32-vulkan-intel)
 info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
-error()    { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 # --- Logic Functions ---
 
@@ -84,13 +87,7 @@ install_dependencies() {
 
     if [ ${#missing_pkgs[@]} -ne 0 ]; then
         warn "Missing packages: ${missing_pkgs[*]}"
-        read -p "Do you want to install them now? [y/N] " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            sudo pacman -S --needed "${missing_pkgs[@]}"
-        else
-            error "Dependencies not met. Installation aborted."
-        fi
+        sudo pacman -S --needed "${missing_pkgs[@]}"
     else
         success "All dependencies satisfied."
     fi
@@ -98,7 +95,7 @@ install_dependencies() {
 
 setup_directories() {
     info "Creating system directories..."
-    sudo mkdir -p "$HELPERS_SOURCE" "$SDDM_CONF_DIR" "$SESSIONS_DIR" "$DATA_DIR"
+    sudo mkdir -p "$HELPERS_DEST" "$SDDM_CONF_DIR" "$SESSIONS_DIR" "$DATA_DIR"
     sudo mkdir -p "$HELPERS_LINKS"
 }
 
@@ -106,10 +103,9 @@ setup_user_config() {
     info "Setting up user configuration in $USER_CONFIG_DIR..."
     mkdir -p "$USER_CONFIG_DIR"
 
-    # Updated README with Naked Recovery logic
     cat << 'EOF' > "$USER_README_FILE"
 ===========================================================
-           STEAM MACHINE DIY - PARAMETERS GUIDE
+            STEAM MACHINE DIY - PARAMETERS GUIDE
 ===========================================================
 
 You can modify the 'config' file with the following values:
@@ -131,8 +127,7 @@ POWER USERS:
 SAFETY WATCHDOG:
 In case of a crash, the file will be renamed to 'config.broken'.
 The system will trigger a "Naked Recovery" session using 
-native hardware negotiation to ensure you can always 
-return to the UI.
+native hardware negotiation.
 
 LOGS: Check /tmp/steamos-diy.log for session diagnostics.
 ===========================================================
@@ -150,53 +145,50 @@ ENABLE_MANGOAPP=1
 CUSTOM_ARGS=""
 EOF
         success "Default config created at $USER_CONFIG_FILE"
-    else
-        info "Existing config found, skipping overwrite."
     fi
 }
 
 deploy_scripts() {
-    info "Deploying core binaries and helpers..."
+    info "Deploying core binaries and helpers from $SOURCE_DIR..."
     
     # Core Binaries
     local core_bins=(os-session-select set-sddm-session steamos-session-launch steamos-session-select)
     for bin in "${core_bins[@]}"; do
-        if [ -f "$bin" ]; then
-            sudo cp "$bin" /usr/local/bin/
+        if [ -f "$SOURCE_DIR/bin/$bin" ]; then
+            sudo cp "$SOURCE_DIR/bin/$bin" /usr/local/bin/
             sudo chmod +x "/usr/local/bin/$bin"
+            success "Deployed: $bin"
+        else
+            warn "Source missing: bin/$bin"
         fi
     done
     
-    # Helper Scripts
-    local helper_scripts=(jupiter-biosupdate steamos-select-branch steamos-set-timezone steamos-update steamos-select-session)
+    # Helper Scripts (Shims)
+    local helper_scripts=(jupiter-biosupdate steamos-select-branch steamos-set-timezone steamos-update)
     for helper in "${helper_scripts[@]}"; do
-        if [ -f "$helper" ]; then
-            sudo cp "$helper" "$HELPERS_SOURCE/"
-            sudo chmod +x "$HELPERS_SOURCE/$helper"
-            sudo ln -sf "$HELPERS_SOURCE/$helper" "$HELPERS_LINKS/$helper"
+        if [ -f "$SOURCE_DIR/helpers/$helper" ]; then
+            sudo cp "$SOURCE_DIR/helpers/$helper" "$HELPERS_DEST/"
+            sudo chmod +x "$HELPERS_DEST/$helper"
+            sudo ln -sf "$HELPERS_DEST/$helper" "$HELPERS_LINKS/$helper"
+            success "Deployed Helper: $helper"
+        else
+            warn "Source missing: helpers/$helper"
         fi
     done
 
-    # Deploy Desktop Resources (Icons & Session Entry)
-    info "Deploying desktop resources and session files..."
+    # Desktop Resources
+    info "Deploying desktop resources..."
     
-    # 1. Gaming Mode Session for SDDM
-    if [ -f "steamos-switcher.desktop" ]; then
-        sudo cp "steamos-switcher.desktop" "$SESSIONS_DIR/"
-    elif [ -f "resources/steamos-switcher.desktop" ]; then
-        sudo cp "resources/steamos-switcher.desktop" "$SESSIONS_DIR/"
+    # Session entry for SDDM
+    if [ -f "$SOURCE_DIR/resources/steamos-switcher.desktop" ]; then
+        sudo cp "$SOURCE_DIR/resources/steamos-switcher.desktop" "$SESSIONS_DIR/"
     fi
 
-    # 2. Return to Gaming Mode Icon (Data folder)
-    if [ -f "GameMode.desktop" ]; then
-        sudo cp "GameMode.desktop" "$DATA_DIR/"
-    elif [ -f "resources/GameMode.desktop" ]; then
-        sudo cp "resources/GameMode.desktop" "$DATA_DIR/"
-    fi
-
-    # 3. Create Desktop Shortcut for current user
-    if [ -f "$DATA_DIR/GameMode.desktop" ]; then
-        cp "$DATA_DIR/GameMode.desktop" "$HOME/Desktop/" 2>/dev/null || true
+    # Return to Gaming Mode Icon
+    if [ -f "$SOURCE_DIR/resources/GameMode.desktop" ]; then
+        sudo cp "$SOURCE_DIR/resources/GameMode.desktop" "$DATA_DIR/"
+        # User Shortcut
+        cp "$SOURCE_DIR/resources/GameMode.desktop" "$HOME/Desktop/" 2>/dev/null || true
         chmod +x "$HOME/Desktop/GameMode.desktop" 2>/dev/null || true
         success "Desktop shortcut created."
     fi
