@@ -1,25 +1,32 @@
 #!/bin/bash
 # =============================================================================
-# SteamMachine-DIY - Gamescope Session Launcher
+# SteamMachine-DIY - Gamescope Session Launcher (Hybrid Version)
 # =============================================================================
 # Script: steamos-session-launch
-# Description: Orchestrates the Gamescope compositor with optimized 
-#              parameters for HDR, VRR, and Frame-pacing. 
-#              Launches Steam in Gamepad UI mode (SteamOS 3 emulation).
-# Path:        /usr/local/bin/steamos-session-launch
+# Description: Orchestrates Gamescope with safe defaults and user overrides.
+# Path: /usr/local/bin/steamos-session-launch
 # =============================================================================
 
-# --- User Configuration ---
-readonly TARGET_WIDTH=1920
-readonly TARGET_HEIGHT=1080
-readonly REFRESH_RATE=120
+# --- 1. Safe Mode Defaults (1080p @ 60Hz) ---
+TARGET_WIDTH=1920
+TARGET_HEIGHT=1080
+REFRESH_RATE=60
+ENABLE_HDR=0
+ENABLE_VRR=0
+ENABLE_MANGOAPP=1
 
-# Features (1=Enabled, 0=Disabled)
-readonly ENABLE_HDR=1
-readonly ENABLE_VRR=1
-readonly ENABLE_MANGOAPP=1
+# --- 2. Load User Configuration ---
+USER_CONFIG="$HOME/.config/steamos-diy/config"
 
-# --- Environment & Logging ---
+if [ -f "$USER_CONFIG" ]; then
+    # Carica le variabili dell'utente sovrascrivendo i Safe Defaults
+    source "$USER_CONFIG"
+    CONFIG_STATUS="CUSTOM (Loaded from $USER_CONFIG)"
+else
+    CONFIG_STATUS="SAFE MODE (Default 1080p@60Hz)"
+fi
+
+# --- 3. Environment & Logging ---
 readonly LOG_FILE="/tmp/gamescope-session.log"
 exec > "$LOG_FILE" 2>&1
 
@@ -32,15 +39,15 @@ export GAMEMODE_AUTO=1
 export STEAM_USE_MANGOAPP=1
 export STEAM_MULTIPLE_XWAYLANDS=1
 
-# --- Logic Functions ---
+# --- 4. Logic Functions ---
 
 build_args() {
-    # Base arguments: Physical output signal and refresh rate
+    # Base arguments
     ARGS=(
         --output-width "$TARGET_WIDTH"
         --output-height "$TARGET_HEIGHT"
         --refresh "$REFRESH_RATE"
-        --always-epl      # Ensures proper window focus for Steam overlays
+        --always-epl      # Essential for Steam overlay focus
         --hide-cursor-delay 3000
     )
 
@@ -52,16 +59,17 @@ build_args() {
     echo "${ARGS[@]}"
 }
 
-# --- Execution ---
+# --- 5. Execution ---
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting Gamescope Session..."
-echo "Configuration: ${TARGET_WIDTH}x${TARGET_HEIGHT}@${REFRESH_RATE}Hz"
+echo "Status: $CONFIG_STATUS"
+echo "Current Parameters: ${TARGET_WIDTH}x${TARGET_HEIGHT}@${REFRESH_RATE}Hz"
 
 # Fetch constructed arguments
 read -a FINAL_ARGS <<< "$(build_args)"
 
 # Final launch command
-# -e: Enables Steam Deck interface integration
-# -steamos3: Unlocks SteamOS specific menus and features in the UI
+# -e: Steam Deck interface integration
+# -steamos3: Unlocks specific SteamOS menus
 exec gamescope "${FINAL_ARGS[@]}" -e -- \
     steam -steamdeck -steamos -steamos3
