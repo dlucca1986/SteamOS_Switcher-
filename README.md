@@ -24,11 +24,16 @@ I developed this project to faithfully simulate the **SteamOS ecosystem** on sta
 
 ## ✨ Key Features
 
-* **🔄 Seamless Session Switching**:
+ * **🔄 Seamless Session Switching**:
   Native support for the **"Switch to Desktop"** button. Transition between Gamescope and KDE Plasma without ever seeing a login screen or typing a password.
 
 * **🎮 Pure Console Experience**:
-  Powered by a custom Watchdog system. If a session fails to start, it automatically triggers a Safe Mode (720p/60Hz) fallback to prevent black screens.
+  
+  * **Standard Boot**: Launches at 1080p@60Hz by default for maximum compatibility.
+   
+  * **Safety Watchdog**: If a session fails, it automatically triggers a Safe Mode (720p/60Hz) fallback to prevent black screens.
+    
+  * **Fully Customizable**: All parameters (Resolution, Refresh Rate, HDR, VRR) can be easily tweaked in your user config file.
 
 * **📏 Hardware-Aware Scaling**: Automatically detects your monitor's limits to prevent "Out of Range" errors while allowing full customization via user config.
 
