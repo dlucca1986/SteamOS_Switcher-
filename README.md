@@ -93,16 +93,26 @@ Built with ❤️ by a gaming fan for the Linux Community.
 
 To get started, copy and paste these commands into your terminal:
 
-```bash
-Clone the repository:
-   `git clone https://github.com/dlucca1986/SteamMachine-DIY.git`
-Enter the folder:
-   `cd SteamMachine-DIY`
-Run the installer:
-   `chmod +x install.sh && ./install.sh`
+* Clone the repository:
+```
+   git clone https://github.com/dlucca1986/SteamMachine-DIY.git
 ```
 
-- 💡 Note: The installer is interactive and will automatically verify your AMD hardware, install missing dependencies, and configure the necessary system permissions.
+* Enter the folder:
+  ```
+   cd SteamMachine-DIY
+  ```
+  
+* Run the installer:
+```
+   chmod +x install.sh && ./install.sh
+```
+
+- 💡 Note: The installer is interactive and will automatically verify your AMD/Intel hardware, install missing dependencies, and configure the necessary system permissions.
+
+
+---
+
 
 ## 🛡️ Clean Architecture & Safety :
 
@@ -113,6 +123,7 @@ I value your system's integrity. This project is designed to be as non-intrusive
 - Transparent Sudoers: A minimal rule is added to /etc/sudoers.d/ only for the session-switching logic.
 
 - Full Reversibility: Every change made by the installer can be undone using the uninstaller.
+
 
 ---
 
