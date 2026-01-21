@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# SteamOS_Switcher - Session Selector Bridge
+# SteamMachine-DIY - Session Selector Bridge
 # =============================================================================
 # Script: steamos-select-session
 # Description: Compatibility bridge that routes session requests from the 
