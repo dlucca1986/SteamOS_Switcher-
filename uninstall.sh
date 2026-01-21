@@ -1,8 +1,7 @@
 #!/bin/bash
 # =============================================================================
 # SteamMachine-DIY Uninstaller
-# Description: Completely removes the SteamOS-like environment and restores
-#              standard system configurations.
+# Description: Completely removes the SteamOS-like environment.
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # =============================================================================
 
@@ -28,7 +27,7 @@ DATA_DIR="/usr/share/steamos-switcher"
 
 # --- User Config Path ---
 USER_CONFIG_DIR="$HOME/.config/steamos-diy"
-LOG_FILE="/tmp/gamescope-session.log"
+LOG_FILE="/tmp/steamos-diy.log"  # <--- ALLINEATO CON IL LAUNCHER
 
 # --- UI Functions ---
 info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -51,14 +50,15 @@ remove_scripts() {
     done
 
     # Helpers and Symlinks
+    # Rimuoviamo il contenuto prima della directory per sicurezza
     if [ -d "$HELPERS_LINKS" ]; then
         sudo rm -rf "$HELPERS_LINKS"
-        info "Removed compatibility symlinks directory: $HELPERS_LINKS"
+        info "Removed compatibility symlinks directory."
     fi
 
     if [ -d "$HELPERS_SOURCE" ]; then
         sudo rm -rf "$HELPERS_SOURCE"
-        info "Removed helper source directory: $HELPERS_SOURCE"
+        info "Removed helper source directory."
     fi
 
     # Desktop Entries & Data
@@ -88,6 +88,7 @@ remove_user_configs() {
         fi
     fi
 
+    # Pulizia del file log allineato
     if [ -f "$LOG_FILE" ]; then
         rm -f "$LOG_FILE"
         info "Cleaned session logs from /tmp"
@@ -129,7 +130,8 @@ revert_performance_tweaks() {
     local gpath
     gpath=$(command -v gamescope)
     if [ -x "$gpath" ]; then
-        if getcap "$gpath" | grep -q 'cap_'; then
+        # Verifichiamo se getcap esiste e se ci sono effettivamente dei cap da rimuovere
+        if command -v getcap >/dev/null && getcap "$gpath" | grep -q 'cap_'; then
             sudo setcap -r "$gpath"
             success "Capabilities removed from $gpath"
         fi
@@ -159,4 +161,4 @@ revert_performance_tweaks
 echo
 success "Uninstallation completed successfully!"
 info "KDE Plasma and SDDM have been restored to default behavior."
-info "A system reboot is recommended."
+info "A system reboot is recommended to clear temporary states."
