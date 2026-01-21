@@ -65,18 +65,16 @@ install_dependencies() {
     local gpu_info
     gpu_info=$(lspci | grep -E "VGA|Display")
 
-    # Hardware Detection Logic
     if echo "$gpu_info" | grep -iq "AMD"; then
-        success "AMD GPU detected. Adding RADV drivers to installation."
+        success "AMD GPU detected. Adding RADV drivers."
         pkgs_to_install+=("${AMD_DRIVERS[@]}")
     elif echo "$gpu_info" | grep -iq "Intel"; then
-        success "Intel GPU detected. Adding ANV drivers to installation."
+        success "Intel GPU detected. Adding ANV drivers."
         pkgs_to_install+=("${INTEL_DRIVERS[@]}")
     else
-        warn "Non-AMD/Intel GPU detected (Nvidia or Unknown). Installing core packages only."
+        warn "Non-AMD/Intel GPU detected. Installing core packages only."
     fi
 
-    # Check for missing packages
     local missing_pkgs=()
     for pkg in "${pkgs_to_install[@]}"; do
         if ! pacman -Qi "$pkg" &> /dev/null; then
@@ -94,7 +92,7 @@ install_dependencies() {
             error "Dependencies not met. Installation aborted."
         fi
     else
-        success "All dependencies and drivers are already satisfied."
+        success "All dependencies satisfied."
     fi
 }
 
@@ -108,6 +106,7 @@ setup_user_config() {
     info "Setting up user configuration in $USER_CONFIG_DIR..."
     mkdir -p "$USER_CONFIG_DIR"
 
+    # Updated README with Naked Recovery logic
     cat << 'EOF' > "$USER_README_FILE"
 ===========================================================
            STEAM MACHINE DIY - PARAMETERS GUIDE
@@ -116,31 +115,32 @@ setup_user_config() {
 You can modify the 'config' file with the following values:
 
 BASE VALUES:
-- TARGET_WIDTH     : Horizontal resolution (e.g., 1920, 1280, 2560)
-- TARGET_HEIGHT    : Vertical resolution (e.g., 1080, 720, 1440)
+- TARGET_WIDTH     : Horizontal resolution (e.g., 1920, 1280)
+- TARGET_HEIGHT    : Vertical resolution (e.g., 1080, 720)
 - REFRESH_RATE     : Frequency in Hz (e.g., 60, 120, 144)
 
 TOGGLES (1 = On, 0 = Off):
 - ENABLE_HDR       : Enable HDR (Requires compatible monitor)
-- ENABLE_VRR       : Enable Variable Refresh Rate (FreeSync/G-Sync)
+- ENABLE_VRR       : Enable Variable Refresh Rate
 - ENABLE_MANGOAPP  : Enable the Steam performance overlay
 
 POWER USERS:
-- CUSTOM_ARGS      : Insert additional Gamescope flags within quotes.
-                     Example: CUSTOM_ARGS="--upscaler fsr --fsr-sharpness 5"
+- CUSTOM_ARGS      : Additional Gamescope flags (e.g., "--upscaler fsr")
 
 -----------------------------------------------------------
-NOTE: In case of a critical error, the file will be renamed 
-to 'config.broken' and the system will start at 720p/60Hz 
-to allow you to fix the parameters.
+SAFETY WATCHDOG:
+In case of a crash, the file will be renamed to 'config.broken'.
+The system will trigger a "Naked Recovery" session using 
+native hardware negotiation to ensure you can always 
+return to the UI.
+
+LOGS: Check /tmp/steamos-diy.log for session diagnostics.
 ===========================================================
 EOF
 
     if [ ! -f "$USER_CONFIG_FILE" ]; then
         cat << EOF > "$USER_CONFIG_FILE"
 # SteamMachine-DIY User Configuration
-# Check README_PARAMETERS.txt for help
-
 TARGET_WIDTH=1920
 TARGET_HEIGHT=1080
 REFRESH_RATE=60
@@ -157,7 +157,6 @@ EOF
 
 deploy_scripts() {
     info "Deploying core binaries and helpers..."
-    
     local core_bins=(os-session-select set-sddm-session steamos-session-launch steamos-session-select)
     for bin in "${core_bins[@]}"; do
         if [ -f "$bin" ]; then
@@ -201,30 +200,25 @@ configure_sddm() {
     info "Applying SDDM Wayland tweaks..."
     sudo tee "$SDDM_WAYLAND_CONF" > /dev/null <<EOF
 [General]
-# Force SDDM to use Wayland to prevent conflicts with X11 sockets (e.g., :0)
 DisplayServer=wayland
 GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
 
 [Wayland]
-# Optimized for KDE Plasma 6
 CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale POSIX --inputmethod maliit
 EOF
 }
 
 optimize_performance() {
     info "Optimizing Gamescope performance capabilities..."
-    local gpath
-    gpath=$(command -v gamescope)
+    local gpath=$(command -v gamescope)
     if [ -x "$gpath" ]; then
         sudo setcap 'cap_sys_admin,cap_sys_nice,cap_ipc_lock+ep' "$gpath"
         success "Capabilities assigned to $gpath"
-    else
-        warn "Gamescope binary not found, skipping setcap."
     fi
 }
 
 setup_pacman_hook() {
-    info "Setting up Pacman Hook for Gamescope capabilities..."
+    info "Setting up Pacman Hook..."
     sudo mkdir -p /etc/pacman.d/hooks
     sudo tee /etc/pacman.d/hooks/gamescope-capabilities.hook > /dev/null <<EOF
 [Trigger]
@@ -234,7 +228,7 @@ Type = Package
 Target = gamescope
 
 [Action]
-Description = Restoring Gamescope capabilities after update...
+Description = Restoring Gamescope capabilities...
 When = PostTransaction
 Exec = /usr/bin/setcap 'cap_sys_admin,cap_sys_nice,cap_ipc_lock+ep' /usr/bin/gamescope
 EOF
@@ -260,4 +254,4 @@ setup_pacman_hook
 echo
 success "Installation completed successfully!"
 info "User config: $USER_CONFIG_FILE"
-info "Note: You might need to restart SDDM or reboot to apply all changes."
+info "Logs: Check /tmp/steamos-diy.log if the session fails."
