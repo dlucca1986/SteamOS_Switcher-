@@ -1,65 +1,71 @@
 #!/bin/bash
 # =============================================================================
-# SteamMachine-DIY - SDDM Session & Autologin Handler
+# SteamMachine-DIY - SDDM Session & State Handler
 # =============================================================================
-# Script: set-sddm-session
-# Description: Privileged helper to update SDDM autologin configuration and
-#              perform a clean restart of the display manager.
-# Path:        /usr/local/bin/set-sddm-session
-# Security:    Requires root privileges (meant to be called via sudoers)
+# Description: Privileged helper to update SDDM autologin and state.
+# Path: /usr/local/bin/set-sddm-session
 # =============================================================================
 
 set -e
 
 # --- Configuration ---
 readonly SDDM_CONF="/etc/sddm.conf.d/zz-steamos-autologin.conf"
+readonly SDDM_STATE="/var/lib/sddm/state.conf"
 readonly MASTER_LOG="/tmp/steamos-diy.log"
-readonly RESTART_LOG="/tmp/sddm-restart.log"
 
 # Input Handling
+# $1: Session name (e.g., plasma or steamos-switcher)
+# $2: Username (if empty, we are returning to Desktop/Login screen)
 SESSION_NAME=$(basename "${1:-plasma}" .desktop)
-USER_NAME="${2:-$USER}"
+USER_NAME="$2"
 
-# --- 1. Persistent Configuration ---
-# Log the update to the master log file
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SDDM-Helper] Updating autologin: User=$USER_NAME, Session=$SESSION_NAME" >> "$MASTER_LOG"
+# --- 1. Persistent Configuration Logic ---
 
-# Writing the autologin override
-cat <<EOF | sudo tee "$SDDM_CONF" > /dev/null
+if [[ -z "$USER_NAME" || "$SESSION_NAME" == "plasma" ]]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SDDM-Helper] Action: Returning to Desktop. Removing autologin." >> "$MASTER_LOG"
+    sudo rm -f "$SDDM_CONF"
+    TARGET_SESSION="plasma"
+else
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SDDM-Helper] Action: Setting autologin for $USER_NAME." >> "$MASTER_LOG"
+    cat <<EOF | sudo tee "$SDDM_CONF" > /dev/null
 [Autologin]
 User=$USER_NAME
 Session=$SESSION_NAME
+Relogin=false
+EOF
+    sudo chmod 644 "$SDDM_CONF"
+    TARGET_SESSION="$SESSION_NAME"
+fi
+
+# --- 2. SDDM State Persistence (Crucial for UI consistency) ---
+# We force SDDM to remember the target session even if autologin is disabled.
+echo "[SDDM-Helper] Updating SDDM state.conf to $TARGET_SESSION" >> "$MASTER_LOG"
+cat <<EOF | sudo tee "$SDDM_STATE" > /dev/null
+[Last]
+User=${USER_NAME:-}
+Session=$TARGET_SESSION
 EOF
 
-# Ensure data is committed to storage
 sync
 
-# --- 2. Clean Service Restart ---
-# We use systemd-run to detach the restart process from the current session.
-# This prevents the script from being killed when SDDM stops.
+# --- 3. Clean Service Restart ---
+# Detached restart to ensure the script completes before SDDM stops.
+
 
 systemd-run --unit=steamos-sddm-restart --description="SteamMachine-DIY: SDDM Restart" --scope bash -c "
-    exec > '$RESTART_LOG' 2>&1
-    
-    echo '[$(date)] Starting clean display manager reset...'
-    sleep 2
-    
-    # Stopping SDDM and cleaning up stale display sockets
+    echo 'Stopping SDDM...'
     systemctl stop sddm
     
-    echo 'Cleaning up X11/Wayland remnants...'
-    pkill -9 Xorg || true
+    # Force release of DRM/GPU resources (Critical for Intel UHD)
+    echo 'Cleaning up GPU resources...'
+    pkill -9 gamescope || true
     pkill -9 Xwayland || true
+    pkill -9 Xorg || true
     rm -rf /tmp/.X11-unix/X*
     
     sleep 1
-    
-    echo 'Re-launching SDDM with new configuration...'
+    echo 'Starting SDDM...'
     systemctl start sddm
-    
-    # Final confirmation to Master Log
-    echo \"[$(date '+%Y-%m-%d %H:%M:%S')] [SDDM-Helper] SDDM service restart signal sent.\" >> '$MASTER_LOG'
 " &
 
-# Return success to the caller immediately
 exit 0
