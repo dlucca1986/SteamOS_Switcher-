@@ -3,8 +3,7 @@
 # SteamMachine-DIY - Gamescope Session Launcher
 # =============================================================================
 # Path: /usr/local/bin/steamos-session-launch
-# Optimized for: Universal Hardware (AMD/Intel/NVIDIA)
-# Special Fixes: Intel UHD DRM/Modifier loop prevention.
+# Includes: Hardware awareness, Safe Mode Recovery.
 # =============================================================================
 
 # --- 1. Safe Mode Defaults ---
@@ -16,7 +15,7 @@ ENABLE_VRR=0
 ENABLE_MANGOAPP=1
 CUSTOM_ARGS=""
 
-# --- 2. Configuration & Status Logic ---
+# --- 2. Configuration Logic ---
 USER_CONFIG="$HOME/.config/steamos-diy/config"
 CONFIG_STATUS="SAFE MODE (1080p@60Hz)"
 
@@ -35,64 +34,54 @@ exec > "$LOG_FILE" 2>&1
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Session Initiation"
 echo "Targeting: $CONFIG_STATUS"
 
-# Standard SteamOS Environment
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=gamescope
 export GAMEMODE_AUTO=1
 export STEAM_USE_MANGOAPP=1
 export STEAM_MULTIPLE_XWAYLANDS=1
-
-# Intel-Specific DRM Fix (Essential for UHD 620)
-export WBC_DISABLE_MODIFIERS=1
+# Intel Fix from Valve/Arch Wiki
+export WBC_DISABLE_MODIFIERS=1 
 
 # --- 4. Hardware Awareness ---
 HW_MAX_RES=$(cat /sys/class/drm/*/modes 2>/dev/null | head -n 1)
 if [[ -n "$HW_MAX_RES" ]]; then
     HW_W=$(echo $HW_MAX_RES | cut -d'x' -f1)
     HW_H=$(echo $HW_MAX_RES | cut -d'x' -f2)
-    
     if [ "$TARGET_WIDTH" -gt "$HW_W" ] || [ "$TARGET_HEIGHT" -gt "$HW_H" ]; then
-        echo "[WARN] Requested ${TARGET_WIDTH}x${TARGET_HEIGHT} exceeds hardware. Adjusting to ${HW_W}x${HW_H}"
+        echo "[WARN] Scaling down: ${TARGET_WIDTH}x${TARGET_HEIGHT} -> ${HW_W}x${HW_H}"
         TARGET_WIDTH=$HW_W
         TARGET_HEIGHT=$HW_H
     fi
 fi
 
-# --- 5. Argument Scrubbing Logic ---
+# --- 5. Argument Scrubbing ---
 clean_custom_args() {
     local raw_args=($CUSTOM_ARGS)
     local cleaned=()
     for arg in "${raw_args[@]}"; do
-        if [[ "$arg" == "-e" ]] || [[ "$arg" == "--steam" ]]; then
-            continue
-        fi
+        [[ "$arg" == "-e" || "$arg" == "--steam" ]] && continue
         cleaned+=("$arg")
     done
     echo "${cleaned[@]}"
 }
 
-# --- 6. Build Final Command ---
+# --- 6. Build Final Command (Valve + Intel Fixes) ---
 build_args() {
     local SCRUBBED_CUSTOM=$(clean_custom_args)
-    
     ARGS=(
         --output-width "$TARGET_WIDTH"
         --output-height "$TARGET_HEIGHT"
         --refresh "$REFRESH_RATE"
-        --always-epl
+        --always-epl         # From Valve: keeps session alive
+        --disable-modifiers  # From Arch Wiki: Intel UHD Stability fix
         --hide-cursor-delay 3000
-        --disable-modifiers  # CRITICAL FIX for Intel/Integrated GPUs
-        -e # Pass control to steam
+        --fade-out-duration 200
+        -e
     )
-    
     [[ $ENABLE_HDR -eq 1 ]]      && ARGS+=(--hdr-enabled)
     [[ $ENABLE_VRR -eq 1 ]]      && ARGS+=(--adaptive-sync)
     [[ $ENABLE_MANGOAPP -eq 1 ]] && ARGS+=(--mangoapp)
-    
-    if [[ -n "$SCRUBBED_CUSTOM" ]]; then
-        read -a INJECTED_ARGS <<< "$SCRUBBED_CUSTOM"
-        ARGS+=("${INJECTED_ARGS[@]}")
-    fi
+    [[ -n "$SCRUBBED_CUSTOM" ]]  && read -a INJ <<< "$SCRUBBED_CUSTOM" && ARGS+=("${INJ[@]}")
     echo "${ARGS[@]}"
 }
 
@@ -100,20 +89,19 @@ build_args() {
 read -a FINAL_ARGS <<< "$(build_args)"
 echo "Final Parameters: ${TARGET_WIDTH}x${TARGET_HEIGHT}@${REFRESH_RATE}Hz"
 
-# Launching Gamescope
-# Note: Using -steamos -gamepadui for the correct Deck experience
+
+
+# Launch in background
 gamemoderun gamescope "${FINAL_ARGS[@]}" -- steam -steamos -gamepadui -steamdeck &
 GAMESCOPE_PID=$!
 
+sleep 5 # Monitoring window
 
 if ! kill -0 $GAMESCOPE_PID 2>/dev/null; then
     echo "[CRITICAL] Session crashed! Triggering Naked Recovery..."
     [[ -f "$USER_CONFIG" ]] && mv "$USER_CONFIG" "${USER_CONFIG}.broken"
-    
-    # --- Naked Recovery ---
-    # Simplified launch to troubleshoot hardware negotiation issues
-    echo "[INFO] Running Emergency Fallback (Native Resolution)"
-    exec gamemoderun gamescope --disable-modifiers -e -n -- steam -steamos -gamepadui -steamdeck
+    # Recovery launch: minimal arguments, no custom configs
+    exec gamemoderun gamescope --disable-modifiers --always-epl -e -n -- steam -steamos -gamepadui -steamdeck
 fi
 
 wait $GAMESCOPE_PID
