@@ -1,0 +1,25 @@
+#!/bin/bash
+# =============================================================================
+# SteamMachine-DIY - Session Selector Bridge
+# =============================================================================
+# Script: steamos-select-session
+# Description: Compatibility bridge that routes session requests from the 
+#              SteamOS helper environment to the core session manager.
+# Path:        /usr/local/bin/steamos-helpers/steamos-select-session
+# =============================================================================
+
+# --- Configuration ---
+readonly CORE_SELECTOR="/usr/local/bin/os-session-select"
+
+# --- Main Logic ---
+
+# We forward all arguments ("$1") to the main os-session-select binary.
+# This ensures that requests like 'steam' or 'plasma' are handled by
+# the centralized logic in /usr/local/bin/.
+
+if [ -f "$CORE_SELECTOR" ]; then
+    exec "$CORE_SELECTOR" "$1"
+else
+    echo "[ERROR] Core session selector not found at $CORE_SELECTOR"
+    exit 1
+fi
