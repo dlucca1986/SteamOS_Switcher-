@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Return to Gaming Mode
 Comment=Switch to Gamescope/Steam Deck UI session
-Exec=/usr/local/bin/os-session-select steam
+Exec=sudo /usr/local/bin/os-session-select gamescope
 Icon=steam
 Terminal=false
 Type=Application
