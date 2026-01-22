@@ -5,7 +5,6 @@
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # =============================================================================
 
-# set -e interrompe lo script al primo errore
 set -e
 
 # --- Environment & Colors ---
@@ -16,7 +15,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Directory sorgente dello script
 SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # --- Configuration Paths ---
@@ -26,7 +24,6 @@ SDDM_CONF_DIR="/etc/sddm.conf.d"
 SDDM_WAYLAND_CONF="$SDDM_CONF_DIR/10-wayland.conf"
 SUDOERS_FILE="/etc/sudoers.d/steamos-switcher"
 
-# --- User Config Path ---
 USER_CONFIG_DIR="$HOME/.config/steamos-diy"
 USER_CONFIG_FILE="$USER_CONFIG_DIR/config"
 
@@ -36,7 +33,6 @@ success() { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-# Funzione per copia sicura: se fallisce, ferma tutto.
 safe_cp() {
     if [ -f "$1" ]; then
         sudo cp "$1" "$2" || error "Failed to copy $1 to $2"
@@ -61,7 +57,8 @@ check_multilib() {
 
 install_dependencies() {
     info "Detecting GPU Hardware and verifying dependencies..."
-    local pkgs=(steam gamescope mangohud lib32-mangohud gamemode vulkan-icd-loader lib32-vulkan-icd-loader mesa-utils)
+    # Aggiunto xorg-xwayland per massima compatibilità con i titoli non nativi
+    local pkgs=(steam gamescope xorg-xwayland mangohud lib32-mangohud gamemode vulkan-icd-loader lib32-vulkan-icd-loader mesa-utils)
     
     if lspci | grep -iq "AMD"; then
         pkgs+=(vulkan-radeon lib32-vulkan-radeon)
@@ -76,36 +73,36 @@ install_dependencies() {
 deploy_overlay() {
     info "Deploying system files from repository overlay..."
     
-    # Crea le directory di base
     sudo mkdir -p "$HELPERS_DEST" "$HELPERS_LINKS_DIR" "$SDDM_CONF_DIR" "/usr/share/wayland-sessions" "/usr/share/steamos-switcher"
 
-    # Copia l'intera struttura 'usr' dal repo al sistema
     if [ -d "$SOURCE_DIR/usr" ]; then
         safe_cp "$SOURCE_DIR/usr" "/usr"
     else
-        error "Directory 'usr' not found in $SOURCE_DIR. Check repository structure."
+        error "Directory 'usr' not found in $SOURCE_DIR."
     fi
 
-    # Rendi i binari eseguibili
+    # Permessi Eseguibili
     sudo chmod +x /usr/local/bin/os-session-select
     sudo chmod +x /usr/local/bin/set-sddm-session
     sudo chmod +x /usr/local/bin/steamos-session-launch
     sudo chmod +x /usr/local/bin/steamos-session-select
     sudo chmod +x "$HELPERS_DEST"/*
 
-    # Creazione dei Simlink per i Polkit Helpers
+    # Creazione dei Simlink (Ora i nomi corrispondono perfettamente)
     info "Creating compatibility symlinks..."
     for helper in "$HELPERS_DEST"/*; do
         name=$(basename "$helper")
-        sudo ln -sf "$helper" "$HELPERS_LINKS_DIR/$name" || error "Failed to link $name"
+        sudo ln -sf "$helper" "$HELPERS_LINKS_DIR/$name"
     done
 
-    # Shortcut sul Desktop dell'utente
+    # Fallback link per il wrapper principale (Cercato da Steam in modalità Desktop)
+    sudo ln -sf "/usr/local/bin/steamos-session-select" "$HELPERS_LINKS_DIR/steamos-session-select"
+
     if [ -f "/usr/share/steamos-switcher/GameMode.desktop" ]; then
         cp "/usr/share/steamos-switcher/GameMode.desktop" "$HOME/Desktop/" 2>/dev/null || true
         chmod +x "$HOME/Desktop/GameMode.desktop" 2>/dev/null || true
     fi
-    success "System overlay deployed successfully."
+    success "System overlay deployed."
 }
 
 setup_user_config() {
@@ -113,6 +110,10 @@ setup_user_config() {
     mkdir -p "$USER_CONFIG_DIR"
     if [ ! -f "$USER_CONFIG_FILE" ]; then
         cat << EOF > "$USER_CONFIG_FILE"
+# SteamMachine-DIY Configuration
+# Logs: /tmp/steamos-diy.log
+# If this file is renamed to config.broken, a crash was detected.
+
 TARGET_WIDTH=1920
 TARGET_HEIGHT=1080
 REFRESH_RATE=60
@@ -128,9 +129,11 @@ EOF
 configure_security() {
     info "Configuring Sudoers policies..."
     local temp_sudo=$(mktemp)
+    # Aggiunto os-session-select per permettere lo shutdown pulito di Steam via sudo
     cat <<EOF > "$temp_sudo"
 # SteamMachine DIY - Session Switcher Permissions
 ALL ALL=(ALL) NOPASSWD: /usr/local/bin/set-sddm-session
+ALL ALL=(ALL) NOPASSWD: /usr/local/bin/os-session-select
 ALL ALL=(ALL) NOPASSWD: /usr/local/bin/steamos-session-select
 EOF
     if visudo -cf "$temp_sudo"; then
@@ -145,7 +148,6 @@ EOF
 
 configure_sddm() {
     info "Applying SDDM configuration..."
-    # Copia la configurazione SDDM se presente nell'overlay etc o creala se manca
     if [ -f "$SOURCE_DIR/etc/sddm.conf.d/10-wayland.conf" ]; then
         sudo mkdir -p "/etc/sddm.conf.d"
         safe_cp "$SOURCE_DIR/etc/sddm.conf.d/10-wayland.conf" "$SDDM_WAYLAND_CONF"
@@ -159,7 +161,7 @@ GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
 CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale POSIX --inputmethod maliit
 EOF
     fi
-    success "SDDM tweaked for Wayland."
+    success "SDDM configured."
 }
 
 optimize_performance() {
@@ -186,4 +188,4 @@ optimize_performance
 
 echo
 success "Installation completed successfully!"
-info "Please Logout and select 'SteamMachine' from SDDM."
+info "Please Logout and select 'SteamOS Switcher' from SDDM."
