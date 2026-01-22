@@ -1,8 +1,7 @@
 #!/bin/bash
 # =============================================================================
-# SteamMachine-DIY - Core Session Manager
+# SteamMachine-DIY - Session Manager
 # =============================================================================
-# Script: os-session-select
 # Description: Centralized logic for switching between Gaming Mode and Desktop.
 # Path: /usr/local/bin/os-session-select
 # =============================================================================
@@ -10,53 +9,82 @@
 set -e
 
 # --- Configuration & Logging ---
-# Aligned with the project Master Log
 readonly LOG_FILE="/tmp/steamos-diy.log"
 readonly USER_NAME=$(id -un)
 readonly SDDM_HELPER="/usr/local/bin/set-sddm-session"
 
-# Redirect output in append mode (>>) to preserve launcher history
+# Redirect output to master log for debugging
 exec >> "$LOG_FILE" 2>&1
 
 # --- Input Validation ---
 SESSION_INPUT=${1:-"steam"}
-
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] [Session-Select] Request: $SESSION_INPUT"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [Session-Select] Switch request: $SESSION_INPUT"
 
 # --- Session Logic ---
 case "${SESSION_INPUT,,}" in
     "plasma"|"desktop")
-        # Must match /usr/share/wayland-sessions/plasma.desktop
         SESSION_FILE="plasma"
-        echo "Switching to Desktop Mode. Preparing logout..."
-        # Gently terminate Steam to allow Cloud Sync
-        pkill -u "$USER_NAME" -TERM steam 2>/dev/null || true
-        sleep 1
+        echo "Action: Returning to Desktop Mode. Initiating graceful shutdown..."
+        
+        # 1. Graceful Steam Shutdown (Trigger Cloud Sync)
+        # Using official Steam command to ensure save games are uploaded
+        sudo -u "$USER_NAME" steam -shutdown &> /dev/null || true
+        
+        # 2. Universal Hardware Cleanup
+        # Wait for Steam to close before forcing the compositor to stop
+        sleep 2
+        
+        # 3. Hardware-Specific Safety (Intel/UHD Graphics Fix)
+        # Intel drivers often keep Gamescope/Xwayland in a 'paused' state.
+        # Force killing these ensures the DRM lease is released for Plasma.
+        echo "Cleaning up display processes (SIGKILL)..."
+        pkill -9 gamescope || true
+        pkill -9 Xwayland || true
         ;;
+
     "gamescope-session-steam"|"steam"|"gaming"|"steamos")
-        # Must match your steamos-switcher.desktop filename
+        # Ensure this matches your /usr/share/wayland-sessions/ file name
         SESSION_FILE="steamos-switcher"
-        echo "Switching to Gaming Mode (Gamescope)."
+        echo "Action: Entering Gaming Mode (Gamescope)."
         ;;
+
     *)
-        echo "Invalid session requested: $SESSION_INPUT"
+        echo "[ERROR] Invalid session requested: $SESSION_INPUT"
         exit 1
         ;;
 esac
 
 # --- Execution ---
 
-# Trigger SDDM state update via the privileged helper
+# Check for the privileged SDDM helper
 if [ -f "$SDDM_HELPER" ]; then
-    echo "Updating SDDM session to: $SESSION_FILE for user: $USER_NAME"
-    sudo "$SDDM_HELPER" "$SESSION_FILE" "$USER_NAME"
+    echo "Updating SDDM state: Session=$SESSION_FILE, User=$USER_NAME"
     
-    if [ $? -eq 0 ]; then
-        echo "Session state updated successfully. Terminating current session..."
-        sync # Flush disk buffers before logout
-        loginctl terminate-user "$USER_NAME"
+    # Toggle Autologin via Helper
+    if [[ "$SESSION_FILE" == "plasma" ]]; then
+        # Passing empty user to helper signals removal of autologin override
+        sudo "$SDDM_HELPER" "plasma" ""
     else
-        echo "[ERROR] SDDM helper failed to update session state."
+        sudo "$SDDM_HELPER" "$SESSION_FILE" "$USER_NAME"
+    fi
+    
+    # Verify helper success and restart Display Manager
+    if [ $? -eq 0 ]; then
+        echo "State updated. Dispatching SDDM restart via systemd-run..."
+        sync # Commit filesystem buffers
+        
+        # Use systemd-run to detach the restart command from the current session.
+        # This prevents the script from killing itself before SDDM can restart.
+        systemd-run --unit=steamos-restart-sddm --description="SteamMachine-DIY: Session Reset" --scope bash -c "
+            sleep 1
+            systemctl restart sddm
+        " &
+        
+        # Log out the user if entering Gaming Mode for a clean slate
+        [[ "$SESSION_FILE" != "plasma" ]] && loginctl terminate-user "$USER_NAME"
+        exit 0
+    else
+        echo "[ERROR] SDDM helper failed to update configuration."
         exit 1
     fi
 else
