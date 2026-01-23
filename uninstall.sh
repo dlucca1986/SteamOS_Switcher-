@@ -3,6 +3,7 @@
 # SteamMachine-DIY - Master Uninstaller
 # Version: 1.0.0
 # Description: Safely removes all SteamMachine-DIY components and symlinks
+# Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # License:MIT
 # =============================================================================
 
