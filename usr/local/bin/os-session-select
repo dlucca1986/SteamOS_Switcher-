@@ -9,17 +9,15 @@
 # License: MIT
 # =============================================================================
 
-# Path: /us
 set -eou pipefail
 
-# --- ANSI Colors ---
+# --- ANSI Colors (Bold & Vibrant) ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # --- Configuration ---
 readonly HELPER_PATH="/usr/local/bin/set-sddm-session"
@@ -33,7 +31,7 @@ else
     readonly CURRENT_USER=$(id -u -n)
 fi
 
-# --- Logging System ---
+# --- Logging System (Dual-Channel) ---
 log_message() {
     local level="$1"
     local message="$2"
@@ -47,21 +45,15 @@ log_message() {
         "ERROR")   color=$RED ;;
     esac
 
-    local log_entry="[$timestamp] [$level] $message"
+    # 1. Output a terminale (Solo se c'è un terminale reale, evita errori in background)
+    if [[ -t 1 ]]; then
+        echo -e "${color}${BOLD}[${level}]${NC} ${message}"
+    fi
 
-    # Output a terminale (Bello e colorato)
-    echo -e "${color}${BOLD}[${level}]${NC} ${message}"
-
-    # Output su file (Pulito, senza codici colore ANSI)
-    echo "$log_entry" >> "$LOG_FILE" 2>/dev/null || true
-    logger -t SteamMachine-DIY "$log_entry"
+    # 2. Output su file (Sempre efficace, pulito per il debug)
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE" 2>/dev/null || true
+    logger -t SteamMachine-DIY "[$level] $message"
 }
-
-# --- Header ---
-clear
-echo -e "${BLUE}${BOLD}==================================================${NC}"
-echo -e "${BLUE}${BOLD}   SteamMachine-DIY Session Manager v2.3.0        ${NC}"
-echo -e "${BLUE}${BOLD}==================================================${NC}"
 
 # --- Logic ---
 case "$TARGET_MODE" in
@@ -71,14 +63,13 @@ case "$TARGET_MODE" in
     "plasma"|"desktop")
         SESSION="plasma"
         if pgrep -u "$CURRENT_USER" -x "steam" > /dev/null; then
-            log_message "INFO" "Steam detected. Sending shutdown signal for $CURRENT_USER..."
+            log_message "INFO" "Steam detected. Sending shutdown signal..."
             sudo -u "$CURRENT_USER" steam -shutdown || true
             sleep 1
         fi
         ;;
     *)
-        echo -e "${RED}${BOLD}Error:${NC} Invalid target mode."
-        echo -e "${YELLOW}Usage:${NC} $0 {steam|plasma}"
+        echo -e "${RED}Error:${NC} Usage: $0 {steam|desktop}"
         exit 1
         ;;
 esac
@@ -87,12 +78,10 @@ esac
 log_message "EXEC" "Switching session to: ${BOLD}$SESSION${NC}"
 
 if sudo "$HELPER_PATH" "$SESSION" "$CURRENT_USER"; then
-    log_message "SUCCESS" "Handover complete. Restarting session for $CURRENT_USER..."
-    echo -e "${BLUE}--------------------------------------------------${NC}"
-    # Piccola pausa per far leggere il messaggio di successo all'utente
-    sleep 1
+    log_message "SUCCESS" "Handover complete. Terminating session..."
+    # Piccola nota: qui non serve sleep, vogliamo velocità!
     exec loginctl terminate-user "$CURRENT_USER"
 else
-    log_message "ERROR" "Helper failed to update SDDM state. Check permissions."
+    log_message "ERROR" "Helper failed to update SDDM state."
     exit 1
 fi
