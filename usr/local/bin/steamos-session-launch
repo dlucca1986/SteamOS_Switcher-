@@ -2,11 +2,11 @@
 # =============================================================================
 # SteamMachine-DIY - Intelligent Universal Launcher
 # =============================================================================
-# Version: 2.3.9
-# Description:  Fail-safe launcher with --safe-mode Relaunch & Additive Logging.
+# Version: 2.4.0
+# Description: Fail-safe launcher with Atomic Watchdog.
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # Path: /usr/local/bin/steamos-session-launch
-# License:MIT
+# License: MIT
 # =============================================================================
 
 set -eou pipefail
@@ -25,15 +25,12 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # --- 0. Mode Detection & Log Initialization ---
-# Check if the script was relaunched in Safe Mode
 SAFE_MODE=false
 [[ "${1:-}" == "--safe-mode" ]] && SAFE_MODE=true
 
 if [ "$SAFE_MODE" = false ]; then
-    # Standard Boot: Clear log for a new session
     echo -e "${CYAN}[$(date '+%Y-%m-%d %H:%M:%S')] [SYSTEM] Starting new session. Logging initialized.${NC}" > "$LOG_FILE"
 else
-    # Recovery Boot: Append separator and recovery message
     {
         echo -e "${YELLOW}------------------------------------------------------------${NC}"
         echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] [RECOVERY] SAFE MODE ACTIVE: Environment Cleaned.${NC}"
@@ -55,15 +52,11 @@ log_launch() {
     esac
 
     local _msg="[$(date '+%Y-%m-%d %H:%M:%S')] [${LEVEL}] ${MESSAGE}"
-
-    # Write to log file with ANSI colors preserved
     echo -e "${COLOR}${_msg}${NC}" >> "$LOG_FILE" 2>/dev/null || true
-    # Send clean message to system journal
     logger -t SteamMachine-DIY "$_msg"
 }
 
 # --- 1. Hardware Auto-Detection ---
-# Skip user config and auto-detection in Safe Mode for maximum stability
 if [ "$SAFE_MODE" = false ]; then
     if [[ ! -f "$CONFIG_FILE" ]]; then
         log_launch "INFO" "Config file missing. Detecting hardware..."
@@ -94,7 +87,6 @@ EOF
     fi
 
     # --- 2. Load Config & Build Argument Array ---
-    # shellcheck source=/dev/null
     source "$CONFIG_FILE"
     G_ARGS=("-e")
     [[ -n "${TARGET_WIDTH:-}" ]]  && G_ARGS+=("-W" "$TARGET_WIDTH")
@@ -117,11 +109,14 @@ if [ "$SAFE_MODE" = false ]; then
     echo "--- GAMESCOPE PRIMARY START ---" >> "$LOG_FILE"
 
     START_TIME=$(date +%s)
-    # Launch gamescope and pipe all output to log
-    gamescope "${G_ARGS[@]}" -- steam -steamdeck -steamos3 >> "$LOG_FILE" 2>&1
+
+    # FIX: Aggiunto '|| true' per evitare che 'set -e' termini lo script in caso di crash di Gamescope.
+    # Questo permette di calcolare DURATION e far scattare la Safe Mode.
+    gamescope "${G_ARGS[@]}" -- steam -steamdeck -steamos3 >> "$LOG_FILE" 2>&1 || true
+
     DURATION=$(( $(date +%s) - START_TIME ))
 
-    # Watchdog: If session lasts less than 3 seconds, trigger recovery
+    # Watchdog: Se la sessione dura meno di 3 secondi, attiva il recupero
     if [ "$DURATION" -lt 3 ]; then
         log_launch "ERROR" "Primary failed after ${DURATION}s."
         log_launch "RECOVERY" "Triggering atomic relaunch in --safe-mode..."
@@ -131,7 +126,6 @@ if [ "$SAFE_MODE" = false ]; then
         log_launch "SUCCESS" "Session closed normally (${DURATION}s)."
     fi
 else
-    # Safe Mode Logic: Minimal command, clean environment, no custom args
     log_launch "WARN" "Launching Emergency Session (No Customs)..."
     echo "--- GAMESCOPE SAFE-MODE START ---" >> "$LOG_FILE"
     exec gamescope -e -- steam -steamdeck -steamos3 -autoconfig >> "$LOG_FILE" 2>&1
