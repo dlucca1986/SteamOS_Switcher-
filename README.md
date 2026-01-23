@@ -1,58 +1,58 @@
-# 🎮 SteamMachine-DIY (AMD & Intel Open Source Build)  W.I.P !!! ( not ready )
-Transform Arch Linux into a Steam Machine.
+# 🎮 SteamMachine-DIY (AMD & Intel Open Source Build)
+**Transform your Arch Linux machine into a powerful, seamless SteamOS Console.**
 
-Gaming Mode integration and SteamOS sessions switcher.
+[![Version](https://img.shields.io/badge/Version-3.0.0-blue.svg)](https://github.com/dlucca1986/SteamMachine-DIY)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-
-> ### "Bringing the Seamless SteamOS Experience to any Linux Distribution (Arch-based)" 🚀
-
+> ### "Bringing the Seamless SteamOS Experience to any Arch-based Distribution"
 
 ---
-
 
 ## 🌟 About the Project
 
 Hi, I'm **Daniele**, and I’m a hardcore gaming fanatic! 🕹️
 
-If you love the Steam Deck gaming experience as much as I do, you’re in the right place. 
-
-I developed this project to faithfully simulate the **SteamOS ecosystem** on standard desktops and laptops, bringing that seamless "console-like" feeling to your Linux machine.
-
+I developed this project to faithfully simulate the **SteamOS ecosystem** on standard desktops and laptops. My goal is to bring that "console-like" feeling to your Linux machine, specifically optimized for **AMD Radeon** and **Intel Graphics**.
 
 ---
-
 
 ## ✨ Key Features
 
- * **🔄 Seamless Session Switching**:
-  Native support for the **"Switch to Desktop"** button. Transition between Gamescope and KDE Plasma without ever seeing a login screen or typing a password.
+* **🔄 Seamless Session Switching**:
+  Native support for the **"Switch to Desktop"** button. Transition between Gamescope and KDE Plasma without ever seeing a login screen or typing a password, thanks to our privileged SDDM helper.
 
 * **🎮 Pure Console Experience**:
-  
-  * **Standard Boot**: Launches at 1080p@60Hz by default for maximum compatibility.
-   
-  * **Safety Watchdog**:If a session fails to initialize, it automatically triggers a "Naked Recovery" fallback. This launches a pure session with dynamic resolution to prevent black screens and ensure system accessibility.
+  * **Intelligent Launcher**: Automatically detects your hardware and display resolution on the first boot.
     
-  * **Fully Customizable**: All parameters (Resolution, Refresh Rate, HDR, VRR) can be easily tweaked in your user config file.
+  * **Safety Watchdog**: If a session fails to initialize (e.g., due to bad settings), it automatically triggers a **Safe Mode** relaunch, bypassing custom configs to ensure you always reach the UI.
+    
+  * **Talking Config**: A detailed template is installed at `~/.config/steamos-diy/config.example`. 
+  The launcher will automatically generate your operational `config` file on the first run. 
+  Use the `.example` file as a guide to safely customize your experience!
 
-* **📏 Hardware-Aware Scaling**: Automatically detects your monitor's limits to prevent "Out of Range" errors while allowing full customization via user config.
+* **📏 Hardware-Aware**: 
+  Built-in support for **Vulkan**, **HDR**, and **VRR**. It prevents "Out of Range" errors by validating display modes before launching Gamescope.
 
 * **🔴 Performance Ready**:
-  Integrated with **Feral GameMode** and **MangoHud** for real-time monitoring and maximum CPU priority.
-  
-* **🧹 Argument Scrubbing**: Automatically cleans conflicting flags from your custom arguments to ensure a stable standalone session.
-
+  Integrated with **Feral GameMode** and **MangoHud**. The installer automatically applies `setcap` to Gamescope for high-priority scheduling and zero stuttering.
 
 ---
 
+## 🛠️ Prerequisites
+
+* **GPU**: AMD Radeon or Intel Graphics (Mesa drivers).
+* **Display Manager**: **SDDM** (Required for session switching logic).
+* **Desktop Environment**: KDE Plasma 6.x (Recommended).
+* **OS**: Arch Linux (or any Arch-based distro like EndeavourOS).
+* **Core Software**: `steam`, `gamescope`, `mangohud`, `gamemode`.
+
+---
 
 ## 📖 Documentation & Wiki:
 
 * **For detailed guides and technical information, please visit our Project Wiki.** https://github.com/dlucca1986/SteamMachine-DIY/wiki
 
-
 ---
-
 
 ## 🤝 Acknowledgments & Credits:
 
@@ -64,76 +64,58 @@ This project wouldn't have been possible without the amazing work and guides fro
 * **Community Guides:** Big thanks to the developers and enthusiasts on **Reddit** (r/SteamDeck, r/LinuxGaming) and the **Arch Wiki** contributors.
 * **Open Source Contributors:** To everyone sharing scripts and ideas to make Linux a better place for gamers. 
 
-
 ---
-
 
 ## ❤️ Support the Project
 
 Built with ❤️ by a gaming fan for the Linux Community.  
 **If you like this project, please leave a ⭐ Star on GitHub!** It helps other gamers find it.
 
-
 ---
-
-
-## 🛠️ Prerequisites:
-
-* **GPU**: AMD Radeon or Intel Graphics (Open Source Mesa drivers required).
-* **Desktop Environment**: KDE Plasma (6.x recommended).
-* **Display Manager**: SDDM (Required for session switching logic).
-* **Core Software**: `steam`, `gamescope`, `mangohud`, `gamemode`.
-* **Driver: Vulkan RADV**: (Handled automatically by the installer).
-
-
----
-
 
 ## 🚀 Quick Installation
 
-To get started, copy and paste these commands into your terminal:
+Follow these steps to transform your system. The installer will guide you through the process, detect your hardware, and handle all dependencies.
 
-* Clone the repository:
-```
-   git clone https://github.com/dlucca1986/SteamMachine-DIY.git
-```
+1. **Clone the repository**:
+   ```bash
+   git clone [https://github.com/dlucca1986/SteamMachine-DIY.git](https://github.com/dlucca1986/SteamMachine-DIY.git)
+   ```
 
-* Enter the folder:
-  ```
+2. **Enter the folder**:
+   ```
    cd SteamMachine-DIY
-  ```
+   ```
   
-* Run the installer:
-```
+3. **Run the installer**:
+   ```
    chmod +x install.sh && ./install.sh
-```
+   ```
 
-- 💡 Note: The installer is interactive and will automatically verify your AMD/Intel hardware, install missing dependencies, and configure the necessary system permissions.
-
-
----
-
-
-## 🛡️ Clean Architecture & Safety :
-
-I value your system's integrity. This project is designed to be as non-intrusive as possible:
-
-- No Overwriting: This project does not modify core system files; it uses /usr/local/bin and dedicated config directories.
-
-- Transparent Sudoers: A minimal rule is added to /etc/sudoers.d/ only for the session-switching logic.
-
-- Full Reversibility: Every change made by the installer can be undone using the uninstaller.
-
+* 💡 **Note**: The installer is interactive and will automatically verify your AMD/Intel hardware, install missing dependencies, and configure the necessary system permissions.
 
 ---
 
+## 🛡️ Clean Architecture & Safety
+
+I value your system's integrity. This project follows a "system-safe" philosophy to ensure your Arch Linux installation remains clean and stable:
+
+* **Non-Intrusive**: Real binaries and scripts are isolated in `/usr/local/bin/`. We use a dedicated directory `/usr/bin/steamos-polkit-helpers/` for symbolic links. This satisfies Steam's hardcoded path requirements without cluttering or overwriting files in your primary `/usr/bin/` directory.
+
+* **Transparent Sudoers**: Security is paramount. A minimal, dedicated policy file is added to `/etc/sudoers.d/steamos-switcher`. It grants passwordless execution *only* to the specific scripts required for session switching, following the principle of least privilege.
+  
+* **Wayland-First Approach**: The project configures SDDM to run on Wayland. This is a strategic choice to ensure **Gamescope** can reliably claim the primary display socket, preventing common X11 resource conflicts and ensuring a seamless transition between the Desktop and Gaming Mode.
+
+* **Full Reversibility**: Every system change, link, and configuration entry is tracked. The included uninstaller can revert your system to its original state at any time.
+
+---
 
 ## 🗑️ Uninstallation
 If you wish to revert all changes, I’ve included a dedicated uninstaller. 
 
 It will completely remove all scripts, symbolic links, desktop shortcuts, and the sudoers rule:
+
 ```bash
 chmod +x uninstall.sh
 sudo ./uninstall.sh
 ```
-
