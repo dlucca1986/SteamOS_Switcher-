@@ -9,7 +9,7 @@
 # License: MIT
 # =============================================================================
 
--eou pipefail
+set -eou pipefail
 
 # --- Configuration ---
 readonly LOG_FILE="/tmp/steamos-diy.log"
