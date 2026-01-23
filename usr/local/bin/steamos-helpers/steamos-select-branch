@@ -5,7 +5,9 @@
 # Script: steamos-select-branch
 # Description: Compatibility shim for SteamOS update channels.
 #              Ensures UI compatibility without breaking system mirrors.
+# Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # Path:        /usr/local/bin/steamos-helpers/steamos-select-branch
+# License:MIT
 # =============================================================================
 
 # --- Configuration & Logging ---
