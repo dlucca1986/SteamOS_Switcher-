@@ -16,7 +16,7 @@ readonly LOG_FILE="/tmp/steamos-diy.log"
 readonly CONFIG_DIR="$HOME/.config/steamos-diy"
 readonly CONFIG_FILE="$CONFIG_DIR/config"
 
-# --- ANSI Color Codes ---
+# --- UI Styling ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -52,42 +52,47 @@ log_launch() {
     esac
 
     local _msg="[$(date '+%Y-%m-%d %H:%M:%S')] [${LEVEL}] ${MESSAGE}"
-    echo -e "${COLOR}${_msg}${NC}" >> "$LOG_FILE" 2>/dev/null || true
+    echo -e "${COLOR}${_msg}${NC}"
+    echo "$_msg" >> "$LOG_FILE" 2>/dev/null || true
     logger -t SteamMachine-DIY "$_msg"
 }
 
 # --- 1. Hardware Auto-Detection ---
 if [ "$SAFE_MODE" = false ]; then
     if [[ ! -f "$CONFIG_FILE" ]]; then
-        log_launch "INFO" "Config file missing. Detecting hardware..."
+        log_launch "INFO" "Configuration missing. Detecting hardware..."
         mkdir -p "$CONFIG_DIR"
 
+        # Find first connected display via DRM sysfs
         ACTIVE_PATH=$(grep -l "^connected" /sys/class/drm/card*-*/status | head -n1 || true)
+
         if [[ -n "$ACTIVE_PATH" ]]; then
             ACTIVE_DIR=$(dirname "$ACTIVE_PATH")
             _CONN_NAME=$(basename "$ACTIVE_DIR")
             _RES=$(head -n1 "$ACTIVE_DIR/modes" 2>/dev/null || echo "1280x720")
             _W=$(echo "$_RES" | cut -d'x' -f1)
             _H=$(echo "$_RES" | cut -d'x' -f2)
-            log_launch "SUCCESS" "Detected: ${_CONN_NAME} (${_W}x${_H})"
+            log_launch "SUCCESS" "Detected Display: ${_CONN_NAME} (${_W}x${_H})"
         else
             log_launch "WARN" "No display detected. Using 720p defaults."
             _W=1280; _H=720
         fi
 
         cat <<EOF > "$CONFIG_FILE"
-# STEAM MACHINE DIY - CONFIGURATION
+# STEAM MACHINE DIY - RUNTIME CONFIGURATION
 TARGET_WIDTH=${_W:-1280}
 TARGET_HEIGHT=${_H:-720}
 REFRESH_RATE=60
 ENABLE_MANGOAPP=0
 ENABLE_HDR=0
-CUSTOM_ARGS="--rt --disable-layers --disable-color-management"
+CUSTOM_ARGS=""
 EOF
     fi
 
-    # --- 2. Load Config & Build Argument Array ---
+    # --- 2. Load Config & Build Arguments ---
+    # shellcheck source=/dev/null
     source "$CONFIG_FILE"
+
     G_ARGS=("-e")
     [[ -n "${TARGET_WIDTH:-}" ]]  && G_ARGS+=("-W" "$TARGET_WIDTH")
     [[ -n "${TARGET_HEIGHT:-}" ]] && G_ARGS+=("-H" "$TARGET_HEIGHT")
@@ -95,38 +100,42 @@ EOF
     [[ "${ENABLE_MANGOAPP:-0}" == "1" ]] && export STEAM_USE_MANGOAPP=1
     [[ "${ENABLE_HDR:-0}" == "1" ]]      && G_ARGS+=("--hdr-enabled")
 
+    # If CUSTOM_ARGS contains errors, Gamescope will crash and trigger the Watchdog.
     if [[ -n "${CUSTOM_ARGS:-}" ]]; then
         read -r -a EXTRA_ARGS <<< "$CUSTOM_ARGS"
         G_ARGS+=("${EXTRA_ARGS[@]}")
+    else
+        # Standard performance fallback
+        G_ARGS+=("--rt")
     fi
 else
-    log_launch "WARN" "Skipping user config and exports for stability."
+    log_launch "WARN" "Skipping user config for stability (Safe Mode)."
 fi
 
 # --- 3. Execution & Watchdog ---
 if [ "$SAFE_MODE" = false ]; then
-    log_launch "INFO" "Launching Primary: gamescope ${G_ARGS[*]}"
+    log_launch "INFO" "Launching Gamescope: ${G_ARGS[*]}"
     echo "--- GAMESCOPE PRIMARY START ---" >> "$LOG_FILE"
 
     START_TIME=$(date +%s)
 
-    # FIX: Aggiunto '|| true' per evitare che 'set -e' termini lo script in caso di crash di Gamescope.
-    # Questo permette di calcolare DURATION e far scattare la Safe Mode.
+    # Watchdog Fix: '|| true' prevents 'set -e' from terminating the script on crash.
     gamescope "${G_ARGS[@]}" -- steam -steamdeck -steamos3 >> "$LOG_FILE" 2>&1 || true
 
     DURATION=$(( $(date +%s) - START_TIME ))
 
-    # Watchdog: Se la sessione dura meno di 3 secondi, attiva il recupero
+    # Watchdog Logic: If session lasts < 3 seconds, trigger Safe Mode recovery.
     if [ "$DURATION" -lt 3 ]; then
-        log_launch "ERROR" "Primary failed after ${DURATION}s."
-        log_launch "RECOVERY" "Triggering atomic relaunch in --safe-mode..."
-        sleep 1
+        log_launch "ERROR" "Session failed after only ${DURATION}s."
+        log_launch "RECOVERY" "Triggering emergency relaunch in --safe-mode..."
+        sleep 2
         exec "$0" --safe-mode
     else
-        log_launch "SUCCESS" "Session closed normally (${DURATION}s)."
+        log_launch "SUCCESS" "Session terminated normally after ${DURATION}s."
     fi
 else
-    log_launch "WARN" "Launching Emergency Session (No Customs)..."
+    log_launch "RECOVERY" "Launching Emergency Session (Minimal Defaults)..."
     echo "--- GAMESCOPE SAFE-MODE START ---" >> "$LOG_FILE"
+    # Use 'exec' to replace current process and free system resources.
     exec gamescope -e -- steam -steamdeck -steamos3 -autoconfig >> "$LOG_FILE" 2>&1
 fi
