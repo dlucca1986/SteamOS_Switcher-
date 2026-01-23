@@ -4,6 +4,7 @@
 # Version: 3.0.0
 # Description: Professional deployment for SteamOS-like experience on Arch
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
+# License:MIT
 # =============================================================================
 
 set -eou pipefail
