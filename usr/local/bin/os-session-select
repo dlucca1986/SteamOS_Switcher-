@@ -9,79 +9,73 @@
 # License: MIT
 # =============================================================================
 
+
 set -eou pipefail
 
-# --- ANSI Colors (Bold & Vibrant) ---
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
+# --- Configuration ---
+readonly HELPER_BIN="/usr/local/bin/set-sddm-session"
+readonly LOG_FILE="/tmp/steamos-diy.log"
+readonly TARGET_MODE="${1:-}"
+
+# Detect real user even if running under sudo
+readonly CURRENT_USER="${SUDO_USER:-$(id -u -n)}"
+
+# --- UI Styling ---
 BOLD='\033[1m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
 NC='\033[0m'
 
-# --- Configuration ---
-readonly HELPER_PATH="/usr/local/bin/set-sddm-session"
-readonly LOG_FILE="/tmp/steamos-diy.log"
-readonly TARGET_MODE="${1,,}"
-
-# --- User Identification ---
-if [[ -v SUDO_USER ]]; then
-    readonly CURRENT_USER="$SUDO_USER"
-else
-    readonly CURRENT_USER=$(id -u -n)
-fi
-
-# --- Logging System (Dual-Channel) ---
-log_message() {
-    local level="$1"
-    local message="$2"
+# --- Functions ---
+log_info() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local color=$NC
-
-    case "$level" in
-        "INFO")    color=$CYAN ;;
-        "EXEC")    color=$YELLOW ;;
-        "SUCCESS") color=$GREEN ;;
-        "ERROR")   color=$RED ;;
-    esac
-
-    # 1. Output a terminale (Solo se c'è un terminale reale, evita errori in background)
-    if [[ -t 1 ]]; then
-        echo -e "${color}${BOLD}[${level}]${NC} ${message}"
-    fi
-
-    # 2. Output su file (Sempre efficace, pulito per il debug)
-    echo "[$timestamp] [$level] $message" >> "$LOG_FILE" 2>/dev/null || true
-    logger -t SteamMachine-DIY "[$level] $message"
+    echo -e "${CYAN}${BOLD}[INFO]${NC} $1"
+    echo "[$timestamp] [SUCCESS] $1" >> "$LOG_FILE" 2>/dev/null || true
 }
 
+log_error() {
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "${RED}${BOLD}[ERROR]${NC} $1" >&2
+    echo "[$timestamp] [ERROR] $1" >> "$LOG_FILE" 2>/dev/null || true
+}
+
+# --- Validation ---
+if [[ -z "$TARGET_MODE" ]]; then
+    echo -e "${BOLD}Usage:${NC} os-session-select {steam|plasma}"
+    exit 1
+fi
+
 # --- Logic ---
-case "$TARGET_MODE" in
+case "${TARGET_MODE,,}" in
     "steam"|"gamescope")
         SESSION="steamos-switcher"
         ;;
     "plasma"|"desktop")
         SESSION="plasma"
+        # Optional: Trigger Steam Cloud Sync before exit
         if pgrep -u "$CURRENT_USER" -x "steam" > /dev/null; then
-            log_message "INFO" "Steam detected. Sending shutdown signal..."
-            sudo -u "$CURRENT_USER" steam -shutdown || true
+            log_info "Initiating Steam shutdown (Cloud Sync)..."
+            # Detached execution to prevent Steam from killing this script
+            (sudo -u "$CURRENT_USER" steam -shutdown &) >/dev/null 2>&1
             sleep 1
         fi
         ;;
     *)
-        echo -e "${RED}Error:${NC} Usage: $0 {steam|desktop}"
+        log_error "Invalid target mode: $TARGET_MODE"
         exit 1
         ;;
 esac
 
-# --- Execution ---
-log_message "EXEC" "Switching session to: ${BOLD}$SESSION${NC}"
+log_info "Switching to ${GREEN}${SESSION}${NC} for user ${GREEN}${CURRENT_USER}${NC}..."
 
-if sudo "$HELPER_PATH" "$SESSION" "$CURRENT_USER"; then
-    log_message "SUCCESS" "Handover complete. Terminating session..."
-    # Piccola nota: qui non serve sleep, vogliamo velocità!
-    exec loginctl terminate-user "$CURRENT_USER"
-else
-    log_message "ERROR" "Helper failed to update SDDM state."
+# 1. Update SDDM state via Privileged Helper
+# Using 'sudo -n' ensures it fails gracefully if sudoers is not configured
+if ! sudo -n "$HELPER_BIN" "$SESSION" "$CURRENT_USER"; then
+    log_error "Privileged helper failed. Check /etc/sudoers.d/ permissions."
     exit 1
 fi
+
+# 2. Final Handover
+log_info "Handover successful. Terminating user session..."
+exec loginctl terminate-user "$CURRENT_USER"
