@@ -4,6 +4,7 @@
 # =============================================================================
 # Version: 2.3.0
 # Description: Privileged helper with ANSI styling and atomic operations.
+# Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # Path: /usr/local/bin/set-sddm-session
 # License: MIT
 # =============================================================================
