@@ -4,6 +4,7 @@
 # =============================================================================
 # Version: 2.3.9
 # Description:  Fail-safe launcher with --safe-mode Relaunch & Additive Logging.
+# Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # Path: /usr/local/bin/steamos-session-launch
 # License:MIT
 # =============================================================================
