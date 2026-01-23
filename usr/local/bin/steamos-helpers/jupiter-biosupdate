@@ -6,6 +6,7 @@
 # Description: Compatibility shim for SteamOS BIOS update infrastructure.
 #              Prevents errors during session transitions on DIY hardware.
 # Path:        /usr/local/bin/steamos-helpers/jupiter-biosupdate
+# License:MIT
 # =============================================================================
 
 # --- Configuration & Logging ---
