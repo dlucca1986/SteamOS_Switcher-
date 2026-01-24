@@ -20,7 +20,12 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # --- Paths to Clean ---
-BIN_FILES=("/usr/local/bin/os-session-select" "/usr/local/bin/set-sddm-session" "/usr/local/bin/steamos-session-launch")
+BIN_FILES=(
+    "/usr/local/bin/os-session-select"
+    "/usr/local/bin/set-sddm-session"
+    "/usr/local/bin/steamos-session-launch"
+    "/usr/bin/steamos-session-select"
+)
 HELPERS_DIR="/usr/local/bin/steamos-helpers"
 POLKIT_DIR="/usr/bin/steamos-polkit-helpers"
 SDDM_CONF="/etc/sddm.conf.d/10-wayland.conf"
@@ -36,7 +41,7 @@ success() { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-# --- Logic ---
+# --- Logic Functions ---
 
 check_privileges() {
     if [[ $EUID -ne 0 ]]; then
@@ -47,7 +52,9 @@ check_privileges() {
 remove_files() {
     info "Removing binaries and scripts..."
     for f in "${BIN_FILES[@]}"; do
-        if [[ -f "$f" ]]; then rm -f "$f" && success "Removed $f"; fi
+        if [[ -f "$f" || -L "$f" ]]; then 
+            rm -f "$f" && success "Removed $f"
+        fi
     done
     
     if [[ -d "$HELPERS_DIR" ]]; then
@@ -67,6 +74,8 @@ remove_files() {
 
 remove_links() {
     info "Removing compatibility symlinks..."
+    
+    # Clean legacy link if exists
     [[ -L "/bin/steamos-session-select" ]] && rm -f "/bin/steamos-session-select"
     
     if [[ -d "$POLKIT_DIR" ]]; then
@@ -79,15 +88,24 @@ clean_user_data() {
     local USER_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
     local TARGET_DIR="$USER_HOME/.config/steamos-diy"
 
+    # --- Desktop Shortcut Removal ---
+    # Detect Desktop directory via xdg-user-dir
+    local DESKTOP_DIR=$(sudo -u "$REAL_USER" xdg-user-dir DESKTOP 2>/dev/null || echo "$USER_HOME/Desktop")
+    if [[ -f "$DESKTOP_DIR/GameMode.desktop" ]]; then
+        rm -f "$DESKTOP_DIR/GameMode.desktop"
+        success "Removed Desktop shortcut from $DESKTOP_DIR"
+    fi
+
+    # --- Configuration and Logs Removal ---
     if [[ -d "$TARGET_DIR" ]]; then
         echo -e "${YELLOW}"
         read -p "[QUESTION] Do you want to remove user config files and logs in $TARGET_DIR? (y/N): " -n 1 -r
-        echo -e "${NC}"
+        echo -e ""
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             rm -rf "$TARGET_DIR"
-            success "User configuration deleted."
+            success "User configuration and logs deleted."
         else
-            info "User configuration kept in $TARGET_DIR."
+            info "User configuration preserved in $TARGET_DIR."
         fi
     fi
 }
@@ -95,13 +113,18 @@ clean_user_data() {
 # --- Execution ---
 clear
 echo -e "${RED}${BOLD}==================================================${NC}"
-echo -e "${RED}${BOLD}           STEAM MACHINE DIY - UNINSTALLER        ${NC}"
+echo -e "${RED}${BOLD}            STEAM MACHINE DIY - UNINSTALLER       ${NC}"
 echo -e "${RED}${BOLD}==================================================${NC}"
 
 check_privileges
 remove_files
 remove_links
 clean_user_data
+
+# Performance restoration (Optional)
+if [[ -x /usr/bin/gamescope ]]; then
+    setcap -r /usr/bin/gamescope 2>/dev/null && info "Reset Gamescope capabilities."
+fi
 
 echo -e "\n${GREEN}${BOLD}Uninstallation Complete!${NC}"
 info "The system has been restored to its original state."
