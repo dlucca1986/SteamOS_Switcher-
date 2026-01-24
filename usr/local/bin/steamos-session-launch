@@ -2,7 +2,7 @@
 # =============================================================================
 # SteamMachine-DIY - Intelligent Universal Launcher
 # =============================================================================
-# Version: 2.4.0
+# Version: 3.0.0
 # Description: Fail-safe launcher with Atomic Watchdog.
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # Path: /usr/local/bin/steamos-session-launch
