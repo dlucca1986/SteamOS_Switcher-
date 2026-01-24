@@ -4,7 +4,7 @@
 # Version: 3.0.0
 # Description: Professional deployment for SteamOS-like experience on Arch
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
-# License:MIT
+# License: MIT
 # =============================================================================
 
 set -eou pipefail
@@ -29,9 +29,7 @@ SDDM_CONF_DIR="/etc/sddm.conf.d"
 SUDOERS_FILE="/etc/sudoers.d/steamos-switcher"
 WAYLAND_SESSIONS="/usr/share/wayland-sessions"
 APP_ENTRIES="/usr/share/applications"
-
-USER_CONFIG_DIR="$HOME/.config/steamos-diy"
-USER_CONFIG_FILE="$USER_CONFIG_DIR/config"
+HOOK_DIR="/etc/pacman.d/hooks"
 
 # --- UI Functions ---
 info()    { echo -e "${CYAN}[SYSTEM]${NC} $1"; }
@@ -50,7 +48,6 @@ check_privileges() {
 install_dependencies() {
     info "Verifying hardware and installing dependencies..."
     
-    # Enable Multilib if not present
     if ! grep -q "^\[multilib\]" /etc/pacman.conf; then
         info "Enabling [multilib] repository..."
         sed -i '/^#\[multilib\]/,+1 s/^#//' /etc/pacman.conf
@@ -59,7 +56,6 @@ install_dependencies() {
 
     local pkgs=(steam gamescope xorg-xwayland mangohud lib32-mangohud gamemode vulkan-icd-loader lib32-vulkan-icd-loader mesa-utils)
     
-    # GPU Specific drivers
     if lspci | grep -iq "AMD"; then
         pkgs+=(vulkan-radeon lib32-vulkan-radeon)
     elif lspci | grep -iq "Intel"; then
@@ -72,18 +68,13 @@ install_dependencies() {
 
 deploy_binaries() {
     info "Deploying binaries to $BIN_DEST..."
-    
     mkdir -p "$HELPERS_DEST"
     
-    # Copy core binaries
     cp "$SOURCE_DIR/bin/os-session-select" "$BIN_DEST/"
     cp "$SOURCE_DIR/bin/set-sddm-session" "$BIN_DEST/"
     cp "$SOURCE_DIR/bin/steamos-session-launch" "$BIN_DEST/"
-    
-    # Copy helpers
     cp "$SOURCE_DIR/bin/steamos-helpers/"* "$HELPERS_DEST/"
     
-    # Permissions
     chmod +x "$BIN_DEST/os-session-select" \
              "$BIN_DEST/set-sddm-session" \
              "$BIN_DEST/steamos-session-launch"
@@ -94,16 +85,12 @@ deploy_binaries() {
 
 setup_integration() {
     info "Integrating with system (Desktop & SDDM)..."
-    
-    # Wayland Session
     mkdir -p "$WAYLAND_SESSIONS"
     cp "$SOURCE_DIR/desktop-entries/steamos-switcher.desktop" "$WAYLAND_SESSIONS/"
     
-    # App Menu Entry
     mkdir -p "$APP_ENTRIES"
     cp "$SOURCE_DIR/desktop-entries/GameMode.desktop" "$APP_ENTRIES/"
     
-    # SDDM Config
     mkdir -p "$SDDM_CONF_DIR"
     cp "$SOURCE_DIR/sddm-config/10-wayland.conf" "$SDDM_CONF_DIR/"
     
@@ -111,15 +98,12 @@ setup_integration() {
 }
 
 create_symlinks() {
-    info "Creating compatibility symlinks in $POLKIT_LINKS_DIR..."
-    
+    info "Creating compatibility symlinks..."
     mkdir -p "$POLKIT_LINKS_DIR"
     
-    # Main switcher link (referenced by /bin link in user stats)
     ln -sf "$BIN_DEST/os-session-select" "$POLKIT_LINKS_DIR/steamos-session-select"
     ln -sf "$POLKIT_LINKS_DIR/steamos-session-select" "/bin/steamos-session-select"
     
-    # Helper links
     for helper in "$HELPERS_DEST"/*; do
         name=$(basename "$helper")
         ln -sf "$helper" "$POLKIT_LINKS_DIR/$name"
@@ -130,7 +114,6 @@ create_symlinks() {
 
 setup_security() {
     info "Configuring NOPASSWD for session switching..."
-    
     cat <<EOF > "$SUDOERS_FILE"
 # SteamMachine DIY - Session Switching Policies
 ALL ALL=(ALL) NOPASSWD: /usr/local/bin/set-sddm-session
@@ -140,10 +123,27 @@ EOF
     success "Sudoers rules updated."
 }
 
+setup_pacman_hooks() {
+    info "Configuring Pacman hook for persistent capabilities..."
+    mkdir -p "$HOOK_DIR"
+
+    cat <<EOF > "$HOOK_DIR/gamescope-capabilities.hook"
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = gamescope
+
+[Action]
+Description = Restoring Gamescope capabilities (cap_sys_admin, cap_sys_nice, cap_ipc_lock)...
+When = PostTransaction
+Exec = /usr/bin/setcap 'cap_sys_admin,cap_sys_nice,cap_ipc_lock+ep' /usr/bin/gamescope
+EOF
+    success "Pacman hook established."
+}
+
 setup_user_config() {
     info "Deploying User Configuration Template..."
-    
-    # Note: This runs as sudo, so we must find the real user
     local REAL_USER=${SUDO_USER:-$USER}
     local USER_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
     local TARGET_DIR="$USER_HOME/.config/steamos-diy"
@@ -152,16 +152,16 @@ setup_user_config() {
     if [[ ! -f "$TARGET_DIR/config" ]]; then
         cp "$SOURCE_DIR/config/steamos-diy.config.example" "$TARGET_DIR/config"
         chown -R "$REAL_USER":"$REAL_USER" "$TARGET_DIR"
-        success "Default config deployed to $TARGET_DIR/config"
+        success "Default config deployed."
     else
-        warn "User config already exists. Skipping deployment."
+        warn "User config already exists. Skipping."
     fi
 }
 
 # --- Execution ---
 clear
 echo -e "${CYAN}${BOLD}==================================================${NC}"
-echo -e "${CYAN}${BOLD}           STEAM MACHINE DIY - INSTALLER          ${NC}"
+echo -e "${CYAN}${BOLD}            STEAM MACHINE DIY - INSTALLER         ${NC}"
 echo -e "${CYAN}${BOLD}==================================================${NC}"
 
 check_privileges
@@ -170,15 +170,15 @@ deploy_binaries
 setup_integration
 create_symlinks
 setup_security
+setup_pacman_hooks # <--- AGGIUNTO QUI
 setup_user_config
 
-# Performance optimization
+# Performance optimization (Immediate effect)
 if [[ -x /usr/bin/gamescope ]]; then
-    setcap 'cap_sys_admin,cap_sys_nice,cap_ipc_lock+ep' /usr/bin/gamescope 2>/dev/null || warn "Failed to set gamescope capabilities."
+    setcap 'cap_sys_admin,cap_sys_nice,cap_ipc_lock+ep' /usr/bin/gamescope 2>/dev/null || warn "Failed to set capabilities."
 fi
 
 echo -e "\n${GREEN}${BOLD}Installation Successful!${NC}"
 echo -e "${CYAN}Next Steps:${NC}"
 echo -e "1. ${BOLD}Logout${NC} from your current session."
-echo -e "2. Select ${BOLD}'SteamOS Switcher'${NC} from the SDDM session menu."
-echo -e "3. Enjoy your Steam Machine experience!\n"
+echo -e "2. Select ${BOLD}'SteamOS Switcher'${NC} from the SDDM menu.\n"
