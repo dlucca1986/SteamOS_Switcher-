@@ -3,11 +3,12 @@
 # SteamMachine-DIY - Localization & Time Manager
 # =============================================================================
 # Script: steamos-set-timezone
+# Version: 3.0.0
 # Description: Compatibility shim for SteamOS timezone synchronization.
 #              Redirects Steam Client timezone requests to system settings.
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # Path:        /usr/local/bin/steamos-helpers/steamos-set-timezone
-# License:MIT
+# License: MIT
 # =============================================================================
 
 # --- Configuration & Logging ---
