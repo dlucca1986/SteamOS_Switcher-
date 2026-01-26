@@ -43,7 +43,7 @@ I developed this project to faithfully simulate the **SteamOS ecosystem** on sta
 * **GPU**: AMD Radeon or Intel Graphics (Mesa drivers).
 * **Display Manager**: **SDDM** (Required for session switching logic).
 * **Desktop Environment**: KDE Plasma 6.x (Recommended).
-* **OS**: Arch Linux (or any Arch-based distro like EndeavourOS).
+* **OS**: Arch Linux (or any Arch-based distro).
 * **Core Software**: `steam`, `gamescope`, `mangohud`, `gamemode`.
 
 ---
