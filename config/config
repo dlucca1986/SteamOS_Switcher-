@@ -1,6 +1,14 @@
 # SteamMachine-DIY User Configuration
-# These values are used by steamos-session-launch
+# This file is sourced by steamos-session-launch
 
+# Visual Dimensions
 TARGET_WIDTH=1280
 TARGET_HEIGHT=720
+
+# Display Refresh Rate
 REFRESH_RATE=60
+
+# Feature Toggles (1 = Enabled, 0 = Disabled)
+ENABLE_HDR=0
+ENABLE_VRR=0
+ENABLE_MANGOAPP=0
