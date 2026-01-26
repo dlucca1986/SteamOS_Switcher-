@@ -87,10 +87,14 @@ Follow these steps to transform your system. The installer will guide you throug
    cd SteamMachine-DIY
    ```
   
-3. **Run the installer**:
+3. **Set Permission**:
    ```
-   chmod +x install.sh && ./install.sh
+   chmod +x install.sh
    ```
+4. **Run the Installer**:
+    ```
+   sudo ./install.sh
+   ```    
 
 * 💡 **Note**: The installer is interactive and will automatically verify your AMD/Intel hardware, install missing dependencies, and configure the necessary system permissions.
 
