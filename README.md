@@ -31,7 +31,7 @@ I developed this project to faithfully simulate the **SteamOS ecosystem** on sta
   Use the `.example` file as a guide to safely customize your experience!
 
 * **📏 Hardware-Aware**: 
-  Built-in support for **Vulkan**, **HDR**, and **VRR**. It prevents "Out of Range" errors by validating display modes before launching Gamescope.
+  Built-in toggles for HDR, VRR, and Mangoapp Performance Overlay via simple config edits.
 
 * **🔴 Performance Ready**:
   Integrated with **Feral GameMode** and **MangoHud**. The installer automatically applies `setcap` to Gamescope for high-priority scheduling and zero stuttering.
