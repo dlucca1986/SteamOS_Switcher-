@@ -3,79 +3,66 @@
 # SteamMachine-DIY - Session Manager (os-session-select)
 # =============================================================================
 # Version: 3.0.0
-# Description: Professional session switcher with ANSI styling.
+# Description: Professional session switcher with integrated logging.
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # Path: /usr/local/bin/os-session-select
 # License: MIT
 # =============================================================================
 
-
 set -eou pipefail
 
-# --- Configuration ---
+# 1. VARIABLES
+# Log located in /var/log. Note: Installer must create it and set chmod 666
+readonly LOG_FILE="/var/log/steamos-diy.log"
 readonly HELPER_BIN="/usr/local/bin/set-sddm-session"
-readonly LOG_FILE="/tmp/steamos-diy.log"
 readonly TARGET_MODE="${1:-}"
-
-# Detect real user even if running under sudo
 readonly CURRENT_USER="${SUDO_USER:-$(id -u -n)}"
 
-# --- UI Styling ---
-BOLD='\033[1m'
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-# --- Functions ---
-log_info() {
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo -e "${CYAN}${BOLD}[INFO]${NC} $1"
-    echo "[$timestamp] [SUCCESS] $1" >> "$LOG_FILE" 2>/dev/null || true
+# 2. LOGGING FUNCTION (Standardized)
+log_msg() {
+    local level="$1"
+    local msg="$2"
+    # Write to log. Use || true to prevent script blocking on write failure
+    echo "[$level] $(date '+%Y-%m-%d %H:%M:%S') - $msg" >> "$LOG_FILE" 2>/dev/null || true
 }
 
-log_error() {
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo -e "${RED}${BOLD}[ERROR]${NC} $1" >&2
-    echo "[$timestamp] [ERROR] $1" >> "$LOG_FILE" 2>/dev/null || true
-}
-
-# --- Validation ---
-if [[ -z "$TARGET_MODE" ]]; then
-    echo -e "${BOLD}Usage:${NC} os-session-select {steam|plasma}"
-    exit 1
+# 3. LOG ROTATION (Master Branch - Keep it light)
+if [ -f "$LOG_FILE" ]; then
+    LINES=$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)
+    if [ "$LINES" -gt 1000 ]; then
+        # sed -i requires write permissions on /var/log or the file itself
+        sed -i '1,800d' "$LOG_FILE" 2>/dev/null || true
+        log_msg "INFO" "Log rotated to maintain performance"
+    fi
 fi
 
-# --- Logic ---
+echo "================================" >> "$LOG_FILE" 2>/dev/null || true
+
+# 4. INPUT VALIDATION
 case "${TARGET_MODE,,}" in
-    "steam"|"gamescope")
+    "steam"|"gamescope"|"steamos")
         SESSION="steamos-switcher"
         ;;
-    "plasma"|"desktop")
+    "plasma"|"desktop"|"kde"|"default")
         SESSION="plasma"
-        # Optional: Trigger Steam Cloud Sync before exit
-        if pgrep -u "$CURRENT_USER" -x "steam" > /dev/null; then
-            log_info "Initiating Steam shutdown (Cloud Sync)..."
-            # Detached execution to prevent Steam from killing this script
-            (sudo -u "$CURRENT_USER" steam -shutdown &) >/dev/null 2>&1
-            sleep 1
-        fi
         ;;
     *)
-        log_error "Invalid target mode: $TARGET_MODE"
+        log_msg "ERROR" "Invalid mode requested: $TARGET_MODE"
+        echo "Usage: os-session-select [steam|plasma]"
         exit 1
         ;;
 esac
 
-log_info "Switching to ${GREEN}${SESSION}${NC} for user ${GREEN}${CURRENT_USER}${NC}..."
+log_msg "INFO" "Switch initiated by $CURRENT_USER to $SESSION"
 
-# 1. Update SDDM state via Privileged Helper
-# Using 'sudo -n' ensures it fails gracefully if sudoers is not configured
-if ! sudo -n "$HELPER_BIN" "$SESSION" "$CURRENT_USER"; then
-    log_error "Privileged helper failed. Check /etc/sudoers.d/ permissions."
+# 5. EXECUTE PRIVILEGED HELPER
+# Pass current user and log path so the helper remains context-aware
+if ! sudo "$HELPER_BIN" "$SESSION" "$CURRENT_USER" "$LOG_FILE"; then
+    log_msg "ERROR" "Failed to initiate session switch via $HELPER_BIN"
     exit 1
 fi
 
-# 2. Final Handover
-log_info "Handover successful. Terminating user session..."
-exec loginctl terminate-user "$CURRENT_USER"
+log_msg "SUCCESS" "Handover to helper completed"
+
+sync
+exit 0
