@@ -1,8 +1,8 @@
 #!/bin/bash
 # =============================================================================
 # SteamMachine-DIY - Master Uninstaller
-# Version: 3.0.0
-# Description: Safely removes all SteamMachine-DIY components, hooks and symlinks
+# Version: 3.1.0
+# Description: Safely removes all components, helpers, hooks, and logs.
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # License: MIT
 # =============================================================================
@@ -34,12 +34,13 @@ SUDOERS_FILE="/etc/sudoers.d/steamos-switcher"
 SESSION_FILE="/usr/share/wayland-sessions/steamos-switcher.desktop"
 APP_FILE="/usr/share/applications/GameMode.desktop"
 PACMAN_HOOK="/etc/pacman.d/hooks/gamescope-capabilities.hook"
+GLOBAL_LOG="/var/log/steamos-diy.log"
 
 # --- UI Functions ---
 info()    { echo -e "${CYAN}[SYSTEM]${NC} $1"; }
 success() { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
-error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+error()    { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 # --- Logic Functions ---
 
@@ -62,20 +63,21 @@ remove_files() {
     fi
 
     info "Cleaning system integration (SDDM & Sessions)..."
-    [[ -f "$SDDM_CONF" ]] && rm -f "$SDDM_CONF" && success "Removed SDDM config"
+    [[ -f "$SDDM_CONF" ]] && rm -f "$SDDM_CONF" && success "Removed SDDM Wayland config"
     [[ -f "$SDDM_AUTOLOGIN" ]] && rm -f "$SDDM_AUTOLOGIN" && success "Removed SDDM autologin override"
-    [[ -f "$SESSION_FILE" ]] && rm -f "$SESSION_FILE" && success "Removed Wayland session"
+    [[ -f "$SESSION_FILE" ]] && rm -f "$SESSION_FILE" && success "Removed Wayland session entry"
     [[ -f "$APP_FILE" ]] && rm -f "$APP_FILE" && success "Removed Application menu entry"
     [[ -f "$SUDOERS_FILE" ]] && rm -f "$SUDOERS_FILE" && success "Removed Sudoers policy"
     
-    info "Removing persistence hooks..."
+    info "Removing persistence hooks and global logs..."
     [[ -f "$PACMAN_HOOK" ]] && rm -f "$PACMAN_HOOK" && success "Removed Pacman capability hook"
+    [[ -f "$GLOBAL_LOG" ]] && rm -f "$GLOBAL_LOG" && success "Removed global log file"
 }
 
 remove_links() {
     info "Removing compatibility symlinks..."
     
-    # Clean legacy link if exists
+    # Clean legacy link if it exists
     [[ -L "/bin/steamos-session-select" ]] && rm -f "/bin/steamos-session-select"
     
     if [[ -d "$POLKIT_DIR" ]]; then
@@ -96,29 +98,25 @@ clean_user_data() {
     fi
 
     # --- 2. Pinned Taskbar Icon Check (KDE Plasma) ---
-    # Look for the plasma appletsrc config (can have slight name variations)
     local PLASMA_CONFIG=$(find "$USER_HOME/.config" -name "plasma*appletsrc" | head -n 1)
     
-    if [[ -f "$PLASMA_CONFIG" ]]; then
-        # Search for "GameMode" in the panel configuration file
-        if grep -qi "GameMode" "$PLASMA_CONFIG"; then
-            echo -e "${YELLOW}"
-            echo -e "${BOLD}[NOTICE] Pinned icon detected!${NC}"
-            warn "A ghost icon (white sheet) might remain on your Taskbar/Panel."
-            info "Please right-click the empty icon and select 'Unpin' manually."
-            echo -e "${NC}"
-        fi
+    if [[ -f "$PLASMA_CONFIG" ]] && grep -qi "GameMode" "$PLASMA_CONFIG"; then
+        echo -e "${YELLOW}"
+        echo -e "${BOLD}[NOTICE] Pinned icon detected!${NC}"
+        warn "A ghost icon (white sheet) might remain on your Taskbar/Panel."
+        info "Please right-click the empty icon and select 'Unpin' manually."
+        echo -e "${NC}"
     fi
 
-    # --- 3. Config and Logs Removal ---
+    # --- 3. Config Removal ---
     if [[ -d "$TARGET_DIR" ]]; then
         echo -e "${YELLOW}"
-        read -p "[QUESTION] Do you want to remove user config files and logs in $TARGET_DIR? (y/N): " -n 1 -r
+        read -p "[QUESTION] Do you want to remove user config files in $TARGET_DIR? (y/N): " -n 1 -r
         echo -e "${NC}"
-        echo "" # New line for better formatting
+        echo "" 
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             rm -rf "$TARGET_DIR"
-            success "User configuration and logs deleted."
+            success "User configuration deleted."
         else
             info "User configuration preserved in $TARGET_DIR."
         fi
@@ -136,6 +134,11 @@ remove_files
 remove_links
 clean_user_data
 
-# Performance restoration
+# Restoration of standard capabilities
 if [[ -x /usr/bin/gamescope ]]; then
-    setcap -r /usr/bin/
+    setcap -r /usr/bin/gamescope 2>/dev/null || true
+    info "Gamescope capabilities restored to default."
+fi
+
+echo -e "\n${GREEN}${BOLD}Uninstallation Complete!${NC}"
+echo -e "${CYAN}Note:${NC} You may need to restart SDDM to see all changes.\n"
