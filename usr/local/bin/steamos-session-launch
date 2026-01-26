@@ -2,7 +2,7 @@
 # =============================================================================
 # SteamMachine-DIY - Intelligent Universal Launcher
 # =============================================================================
-# Version: 3.1.0
+# Version: 3.0.0
 # Description: Fail-safe launcher with HDR, VRR, and Mangoapp support.
 # Repository: https://github.com/dlucca1986/SteamMachine-DIY
 # Path: /usr/local/bin/steamos-session-launch
@@ -11,12 +11,11 @@
 
 set -eou pipefail
 
-# 1. Path Configuration
+# --- 1. Path Configuration ---
 readonly LOG_FILE="/var/log/steamos-diy.log"
-readonly CONFIG_DIR="$HOME/.config/steamos-diy"
-readonly CONFIG_FILE="$CONFIG_DIR/config"
+readonly CONFIG_FILE="$HOME/.config/steamos-diy/config"
 
-# Logging Function: Writes and ensures open permissions for the Control Center
+# Logging Function: Writes to file and ensures open permissions for the UI/Control Center
 log_msg() {
     local level="$1"
     local msg="$2"
@@ -24,70 +23,78 @@ log_msg() {
     chmod 666 "$LOG_FILE" 2>/dev/null || true
 }
 
-# --- Hardware Diagnostics ---
+# Hardware Diagnostics: Logged on crash to help troubleshoot DRM/GPU issues
 trace_gpu_failure() {
     log_msg "DEBUG" "--- GPU FAILURE DIAGNOSTIC ---"
     log_msg "DEBUG" "DRM Master Status: $(ls /sys/class/drm/card*/device/drm/card*/master 2>/dev/null || echo 'None found')"
     log_msg "DEBUG" "Processes using GPU: $(fuser -v /dev/dri/card* 2>&1 || echo 'None')"
 }
 
-# 2. Safe Mode Management
+# --- 2. Modes & Flags Initialization ---
 SAFE_MODE=false
 [[ "${1:-}" == "--safe-mode" ]] && SAFE_MODE=true
 
+# Reset variables to empty (Empty values = Gamescope Auto-Negotiation)
+W=""; H=""; R=""; HDR=0; VRR=0; MANGO=0
+
+# --- 3. Configuration Logic ---
 if [ "$SAFE_MODE" = true ]; then
-    log_msg "ERROR" "SAFE MODE ACTIVE - Attempting recovery with autoconfig"
+    log_msg "ERROR" "!! SAFE MODE ACTIVE !! - Bypassing config and using -autoconfig"
     trace_gpu_failure
 else
-    log_msg "INFO" "Starting standard Gaming Session"
-fi
-
-# 3. Configuration Generation/Loading
-if [[ ! -f "$CONFIG_FILE" ]]; then
-    mkdir -p "$CONFIG_DIR"
-    ACTIVE_PATH=$(grep -l "^connected" /sys/class/drm/card*-*/status | head -n1 || true)
-
-    if [[ -n "$ACTIVE_PATH" ]]; then
-        ACTIVE_DIR=$(dirname "$ACTIVE_PATH")
-        _RES=$(head -n1 "$ACTIVE_DIR/modes" 2>/dev/null || echo "1280x720")
-        _W=$(echo "$_RES" | cut -d'x' -f1)
-        _H=$(echo "$_RES" | cut -d'x' -f2)
+    if [[ -f "$CONFIG_FILE" ]]; then
+        # Standard load from the configuration file provided by the installer/UI
+        source "$CONFIG_FILE" 2>/dev/null || true
+        W=${TARGET_WIDTH:-}
+        H=${TARGET_HEIGHT:-}
+        R=${REFRESH_RATE:-}
+        HDR=${ENABLE_HDR:-0}
+        VRR=${ENABLE_VRR:-0}
+        MANGO=${ENABLE_MANGOAPP:-0}
+        log_msg "INFO" "Configuration loaded from $CONFIG_FILE"
     else
-        _W=1280; _H=720
+        log_msg "WARN" "Config file not found. Proceeding with AUTO settings."
     fi
-    # Create default user config with extra toggles (0=off, 1=on)
-    echo -e "TARGET_WIDTH=$_W\nTARGET_HEIGHT=$_H\nREFRESH_RATE=60\nENABLE_HDR=0\nENABLE_VRR=0\nENABLE_MANGOAPP=0" > "$CONFIG_FILE"
-    log_msg "CONFIG" "No config found. Auto-detected: ${_W}x${_H}"
 fi
 
-# Load variables with safety fallbacks
-source "$CONFIG_FILE" 2>/dev/null || true
-W=${TARGET_WIDTH:-1280}
-H=${TARGET_HEIGHT:-720}
-R=${REFRESH_RATE:-60}
+# --- 4. Building Arguments ---
+# -e: Required for Steam integration
+G_ARGS=("-e")
 
-# Base Arguments
-G_ARGS=("-e" "-W" "$W" "-H" "$H" "-r" "$R")
+# Apply user-defined parameters only if not in Safe Mode
+if [ "$SAFE_MODE" = false ]; then
+    [[ -n "$W" && -n "$H" ]] && G_ARGS+=("-W" "$W" "-H" "$H")
+    [[ -n "$R" ]] && G_ARGS+=("-r" "$R")
+    [[ "$HDR" == "1" ]] && G_ARGS+=("--hdr-enabled")
+    [[ "$VRR" == "1" ]] && G_ARGS+=("--adaptive-sync")
+    [[ "$MANGO" == "1" ]] && G_ARGS+=("--mangoapp")
+fi
 
-# --- Feature Toggles Logic ---
-[[ "${ENABLE_HDR:-0}" == "1" ]] && G_ARGS+=("--hdr-enabled") && log_msg "CONFIG" "HDR enabled"
-[[ "${ENABLE_VRR:-0}" == "1" ]] && G_ARGS+=("--adaptive-sync") && log_msg "CONFIG" "VRR enabled"
-[[ "${ENABLE_MANGOAPP:-0}" == "1" ]] && G_ARGS+=("--mangoapp") && log_msg "CONFIG" "Mangoapp enabled"
+# --- 5. Session Start ---
+log_msg "INFO" "-----------------------------------------------"
+log_msg "INFO" " SESSION: $([ "$SAFE_MODE" = true ] && echo "!! SAFE MODE !!" || echo "USER OPTIMIZED")"
+log_msg "INFO" " RENDER: ${W:-AUTO}x${H:-AUTO} @ ${R:-AUTO}Hz"
+log_msg "INFO" " FLAGS: HDR:$HDR VRR:$VRR MANGO:$MANGO"
+log_msg "INFO" "-----------------------------------------------"
 
-# 4. Execution and Watchdog
-log_msg "LAUNCH" "Gamescope arguments: ${G_ARGS[*]}"
 START=$(date +%s)
 
-# Launch Steam under Gamescope
-stdbuf -oL -eL gamescope "${G_ARGS[@]}" -- steam -steamdeck -steamos3 $([ "$SAFE_MODE" = true ] && echo "-autoconfig") >> "$LOG_FILE" 2>&1 || true
+# Execute Steam inside Gamescope
+# -steamdeck -steamos3: Forces the Handheld UI
+# -autoconfig: Only added during Safe Mode to reset corrupted internal video settings
+stdbuf -oL -eL gamescope "${G_ARGS[@]}" -- \
+    steam -steamdeck -steamos3 \
+    $([ "$SAFE_MODE" = true ] && echo "-autoconfig") >> "$LOG_FILE" 2>&1 || true
 
-# Ensure the log remains accessible after crash/closure
+# --- 6. Watchdog & Recovery ---
+# Ensure the log file permissions remain accessible after session end/crash
 chmod 666 "$LOG_FILE" 2>/dev/null || true
 
-# Watchdog: if the session lasts less than 2 seconds, it is considered a critical crash
+# Watchdog: If the session crashes in less than 2 seconds, trigger Safe Mode recovery
 if [ "$SAFE_MODE" = false ] && [ $(( $(date +%s) - START )) -lt 2 ]; then
-    log_msg "CRITICAL" "Session lasted < 2s. Relaunching in Safe Mode..."
+    log_msg "CRITICAL" "Session lasted < 2s. Crash detected."
     trace_gpu_failure
+    log_msg "RECOVERY" "Re-executing in Safe Mode: exec $0 --safe-mode"
     exec "$0" --safe-mode
 fi
 
