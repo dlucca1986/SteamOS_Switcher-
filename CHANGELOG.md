@@ -735,6 +735,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `shutil.copyfileobj(src, dest)` instead, same end result, avoiding an allocation
   proportional to file size on a resource-constrained handheld. Found via the same full-file
   8-agent review as the fixes above (2026-08-31).
+- `utils.py`: deferred the `tarfile`/`shutil` imports (used only by backup/restore
+  verification and the self-update path) to their actual call sites, so every other importer
+  of this module — `session_launch.py` on the boot-critical session-switch path included —
+  no longer pays their load cost for nothing. Follows the pattern already established for
+  `urllib`/`json`/`hashlib`. Measured: `utils.py`'s cumulative import time dropped from ~55ms
+  to ~45ms (`python3 -X importtime`, 3-run average); a real but modest win against a
+  session-switch latency whose felt component (~4s) is otherwise dominated by third-party
+  gamescope/Steam startup, not by this project's own code.
 
 ### Changed
 - 3 minor cleanups from the full-file 9-agent review of `session_launch.py`/
