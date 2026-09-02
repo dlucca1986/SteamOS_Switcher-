@@ -16,13 +16,11 @@ import os
 import pwd
 import re
 import shlex
-import shutil
 
 # B404: importing subprocess isn't the risk — every call site below
 # passes a fixed argv list, never shell=True or user-controlled input.
 import subprocess  # nosec B404
 import sys
-import tarfile
 import threading
 from pathlib import Path
 from typing import Any, NamedTuple, overload
@@ -544,6 +542,13 @@ def verify_archive(
     path: str | Path, fail_tag: str = "ARCHIVE_VERIFY_FAIL"
 ) -> bool:
     """Walk all tar members end-to-end to verify gzip integrity."""
+    # Deferred import: tarfile is only needed by backup.py/restore.py's
+    # verification and download_release() (~15ms load cost) — every other
+    # importer of this module, session_launch.py included, would
+    # otherwise pay it on every session boot/switch for nothing.
+    # pylint: disable=import-outside-toplevel
+    import tarfile
+
     try:
         with tarfile.open(str(path), "r:gz") as tar:
             for _ in tar:
@@ -716,6 +721,12 @@ def _prune_downloads(root: Path, keep: Path | None = None) -> None:
     if given, is skipped — used to protect a just-verified new download
     from being pruned as if it were a stale previous one.
     """
+    # Deferred import: shutil is only needed by this self-update-only
+    # helper (~15ms load cost) — every other importer of this module,
+    # session_launch.py included, would otherwise pay it for nothing.
+    # pylint: disable=import-outside-toplevel
+    import shutil
+
     for entry in root.iterdir():
         if (
             entry.is_dir()
@@ -838,6 +849,11 @@ def download_release(
     alone only covers the moment of extraction, not whatever else might
     touch the (user-writable) destination directory afterward.
     """
+    # Deferred import — see verify_archive()'s own comment on why tarfile
+    # isn't a top-level import in this module.
+    # pylint: disable=import-outside-toplevel
+    import tarfile
+
     if not _require_https(info.tarball_url, "UPDATE_DOWNLOAD_FAIL"):
         return None
 
