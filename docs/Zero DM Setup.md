@@ -31,7 +31,7 @@ The framework integrates directly into the systemd hierarchy, replacing the disp
 
 ### Environment & Recovery
 *   **Runtime Context**: The service sets `XDG_RUNTIME_DIR=/run/user/<UID>`, `XDG_SESSION_TYPE=wayland`, `SSOT_CONF=/etc/default/steamos_diy.conf`, and `XDG_DESKTOP_PORTAL_DIR=/usr/share/xdg-desktop-portal/portals` explicitly, ensuring Gamescope, Wayland clients, and portal-dependent apps operate correctly outside a standard desktop login session.
-*   **Log Routing**: `StandardOutput=journal` and `StandardError=journal` route all session output to the systemd journal, visible via `journalctl -u steamos_diy.service`.
+*   **Log Routing**: `StandardOutput=journal` and `StandardError=journal` route the process's raw stdout/stderr (uncaught tracebacks, systemd's own lifecycle lines) to the journal, visible via `journalctl -u steamos_diy.service`. The application's own structured logging (`jlog()`'s `CORE`/`STEAM`/`SYSTEM` tags) does **not** show up there: `PAMName=login` moves the process into its own login-session cgroup, and journald attributes a `syslog()`-sent message's unit from the sender's current cgroup — use `journalctl -t CORE -t STEAM -t SYSTEM` instead (see [Troubleshooting](https://github.com/dlucca1986/SteamMachine-DIY/wiki/Troubleshooting)).
 *   **Fault Tolerance**: A `Restart=on-failure` policy with a `1-second` delay recovers the session automatically from crashes and after session switches — this is frequent and expected (every switch exits `75` by design, see [SteamOS Session Launch](https://github.com/dlucca1986/SteamMachine-DIY/wiki/Steamos-Session-Launch)).
 
 > [!WARNING]
@@ -39,7 +39,7 @@ The framework integrates directly into the systemd hierarchy, replacing the disp
 >
 > `StartLimitIntervalSec=120` / `StartLimitBurst=10` caps restarts at 10 within 120 seconds. This is deliberate: if *both* Gaming and Desktop targets crash instantly (e.g. a broken Wayland/Plasma install), the guard stops systemd from hammering TTY1 at ~1 Hz forever. It is tuned generously enough to never trip during normal Steam↔Desktop toggling.
 >
-> If the limit is ever hit, `steamos_diy.service` stops retrying and TTY1 goes black — with `getty@tty1` masked, there is no automatic way back. **Recovery**: switch to another TTY (`Ctrl+Alt+F2`) or SSH in, then run `sudo systemctl reset-failed steamos_diy.service && sudo systemctl start steamos_diy.service` after fixing the underlying issue (check `journalctl -u steamos_diy.service` for the crash cause first).
+> If the limit is ever hit, `steamos_diy.service` stops retrying and TTY1 goes black — with `getty@tty1` masked, there is no automatic way back. **Recovery**: switch to another TTY (`Ctrl+Alt+F2`) or SSH in, then run `sudo systemctl reset-failed steamos_diy.service && sudo systemctl start steamos_diy.service` after fixing the underlying issue (check `journalctl -t CORE -t STEAM -t SYSTEM` for the crash cause first — `-u steamos_diy.service` only shows the restart loop itself, not why each attempt failed).
 *   **TTY Cleanup**: `TTYReset=yes` and `TTYVTDisallocate=yes` ensure the terminal is fully reset between session restarts, preventing display artifacts.
 *   **Kill Policy**: `KillMode=mixed` sends `SIGTERM` to the main process only (not the whole cgroup), allowing `session_launch.py`'s signal handler to drain the child process before exiting. `TimeoutStopSec=10` sets the hard limit before systemd escalates to `SIGKILL`.
 

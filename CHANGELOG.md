@@ -727,6 +727,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   a real installed gamescope (3.16.28): a config using `--fade-out-duration` now passes, a
   genuinely invalid flag is still correctly rejected. Found during a real-hardware test round
   (2026-09-03).
+- **Docs**: `journalctl -u steamos_diy.service` was documented (Troubleshooting, Zero DM
+  Setup, FAQ wiki pages) as showing the session launcher's own logs, including crash
+  recovery — it never did. `PAMName=login` moves the process into its own login-session
+  cgroup (`user-<uid>.slice/session-N.scope`), and journald attributes a `syslog()`-sent
+  message's unit from the sender's *current* cgroup, so every `jlog()` line (`CORE`/`STEAM`/
+  `SYSTEM`, including `EARLY_EXIT_RECOVERY`) is filed under that session scope instead —
+  `-u` only ever showed systemd's own start/stop/restart lines. The `sdy-errors` diagnostic
+  alias built on `-u ... --priority=3` was consequently dead on arrival: it could never match
+  a real application error. All three docs pages now lead with `journalctl -t CORE -t STEAM
+  -t SYSTEM` and explain why `-u` alone misses everything; the alias now filters on the same
+  tags. Found and confirmed live on real hardware while deliberately testing the two
+  crash-recovery paths in `session_launch.py` (`kill -9` on gamescope before vs. after
+  `VALIDATED_STEAM_STABLE`) — both recovery paths themselves worked exactly as designed, only
+  the documented way to *see* that in the journal was wrong (2026-09-07).
 
 ### Performance
 - `restore.py`: `_write_member`'s `dest.write(src.read())` loaded an archive member's entire

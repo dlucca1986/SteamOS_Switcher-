@@ -89,12 +89,15 @@ See [Architecture](https://github.com/dlucca1986/SteamMachine-DIY/wiki/Architect
 ### 14. Where can I find the logs for debugging?
 We use the **System Journal**. Use the following commands or check the **Diagnostics** tab in the Control Center:
 ```bash
-# Session logs (Gaming/Desktop lifecycle, crash recovery)
-journalctl -u steamos_diy.service -f
-
-# Full log stream including helper shims and backup/restore
-# (helpers run outside the service cgroup, so -u alone misses them)
+# Application logs: crash recovery, session switches, gamescope launch args,
+# backup/restore, self-update, and helper shims — this is what you want.
 journalctl -t CORE -t STEAM -t SYSTEM -f
+
+# Systemd's own service lifecycle only (start/stop/restart, exit codes) —
+# NOT the application logs above. PAMName=login moves session_launch.py
+# into its own login-session cgroup, so its jlog() output never lands
+# under this unit filter; see Troubleshooting for why.
+journalctl -u steamos_diy.service -f
 ```
 
 ---

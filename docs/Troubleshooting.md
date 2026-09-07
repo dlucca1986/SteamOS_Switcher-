@@ -18,6 +18,17 @@ The framework uses a unified tagging system. Use `journalctl` to filter logs and
 
 `control_center.py` (the GUI) never logs to the journal directly — failures there show as an on-screen message box or status-bar text instead, not a `journalctl` entry.
 
+**Why `journalctl -u steamos_diy.service` won't show any of these tags:** the service's
+`PAMName=login` opens a real login session via `pam_systemd`, which moves the process into
+its own login-session cgroup (`user-<uid>.slice/session-N.scope`) instead of the service
+unit's cgroup. `jlog()` messages are sent through `syslog()`, and journald attributes a
+syslog message's `_SYSTEMD_UNIT` from the sender's *current* cgroup at send time — so every
+`CORE`/`STEAM`/`SYSTEM` line ends up filed under that session scope, not under
+`steamos_diy.service`. Only systemd's own service-lifecycle lines (Started/Stopped, exit
+codes — emitted by systemd itself, not the child process) show up under `-u`. Always use
+`-t <tag>` (section 3 below) to see actual application log content; confirmed by inspecting
+a live entry's fields with `journalctl -t CORE -o verbose`.
+
 ---
 
 ## 📖 2. Message Reference
@@ -169,7 +180,7 @@ One message is logged directly by the C library, not through Python's `jlog()` �
 
 | Command | Purpose |
 | :--- | :--- |
-| `journalctl -u steamos_diy.service -f` | Live logs from the session launcher (session_launch.py). |
+| `journalctl -u steamos_diy.service -f` | Systemd's own service lifecycle only (start/stop/restart, exit codes) — **not** the application log tags, see the note in section 1. |
 | `journalctl -t CORE -t STEAM -t SYSTEM` | Full project log view — single tags can be filtered individually (see the table above). |
 | `sudo fuser -v /dev/dri/card*` | Identify which process is currently locking the GPU. |
 | `cat /sys/class/drm/*/modes` | List all resolutions natively detected by the Kernel (DRM). |
@@ -205,8 +216,8 @@ Add these to your `~/.bashrc` to control the architecture. These commands intera
 # Service lifecycle logs (session start/stop/restart — use -t CORE -t STEAM -t SYSTEM for application logs)
 alias sdy-logs='journalctl -u steamos_diy.service -f -n 100'
 
-# Display only critical errors recorded by the service
-alias sdy-errors='journalctl -u steamos_diy.service --priority=3'
+# Display only critical errors recorded by the service (must use -t, not -u — see section 1)
+alias sdy-errors='journalctl -t CORE -t STEAM -t SYSTEM --priority=3'
 
 # --- 🚀 SESSION MANAGEMENT ---
 # Switch session (Desktop/Steam)
