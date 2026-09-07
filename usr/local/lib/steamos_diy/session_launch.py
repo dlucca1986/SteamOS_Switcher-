@@ -71,7 +71,27 @@ GAME_MODE_ENV: dict[str, str] = {
     "ENABLE_GAMESCOPE_WSI": "1",
     "VKD3D_SWAPCHAIN_LATENCY_FRAMES": "3",
     "WINEDLLOVERRIDES": "dxgi=n",
+    # Desktop-session styling for Qt apps inside gamescope — avoids missing
+    # icons/unreadable text. Verified functional here: this system already
+    # ships KDEPlasmaPlatformTheme6.so, unlike the two vars below.
+    "QT_QPA_PLATFORM_THEME": "kde",
+    # Cursor scale inside the embedded gamescope X11 session — applies to
+    # whatever cursor theme is already active, no bundled theme needed.
+    "XCURSOR_SCALE": "256",
 }
+
+# Deliberately NOT ported from Valve's gamescope-session, despite being in
+# the same source block as the vars above: QT_IM_MODULE=steam,
+# GTK_IM_MODULE=Steam, and XCURSOR_THEME=steam all point at a "steam"
+# plugin/theme (Qt platforminputcontext, GTK immodule, XCursor theme) that
+# ships only inside the real SteamOS image — confirmed absent from this
+# project's own target systems (checked platforminputcontexts/, GTK
+# immodules/, and every icon theme dir) and not bundled by the Steam
+# client itself. Setting them would be inert on every real install this
+# project targets, not "genuinely improving" anything — the kind of
+# cargo-culted config this project explicitly reviews against. Revisit
+# only if a way to legitimately obtain these assets (not just copying
+# Valve's own copyrighted cursor theme) is ever found.
 
 # Real SteamOS's gamescope-session raises this before spawning Steam —
 # Proton/games with heavy shader-cache or asset I/O can exhaust the

@@ -63,6 +63,20 @@ def test_build_gamescope_args_survives_non_list_flags(set_ssot):
     assert args[0].endswith("gamescope")
 
 
+def test_game_mode_env_matches_real_steamos_theme_vars():
+    """Pins the two vars ported from Valve's gamescope-session that are
+    actually functional on this project's target systems (verified: this
+    system ships KDEPlasmaPlatformTheme6.so). QT_IM_MODULE/GTK_IM_MODULE/
+    XCURSOR_THEME were deliberately NOT ported — their "steam" plugin/theme
+    only exists inside the real SteamOS image, so setting them would be
+    inert here; see the comment above GAME_MODE_ENV in session_launch.py."""
+    assert session_launch.GAME_MODE_ENV["QT_QPA_PLATFORM_THEME"] == "kde"
+    assert session_launch.GAME_MODE_ENV["XCURSOR_SCALE"] == "256"
+    assert "QT_IM_MODULE" not in session_launch.GAME_MODE_ENV
+    assert "GTK_IM_MODULE" not in session_launch.GAME_MODE_ENV
+    assert "XCURSOR_THEME" not in session_launch.GAME_MODE_ENV
+
+
 def test_raise_nofile_limit_raises_soft_below_target(monkeypatch):
     monkeypatch.setattr(
         session_launch.resource, "getrlimit", lambda _r: (1024, 524288)
