@@ -871,6 +871,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   was inconclusive — its mechanism lives inside Steam's own compiled client, not verifiable by
   reading scripts, and confirming it would need a live per-launch systemd-scope check
   disproportionate to the expected gain — left unimplemented rather than guessed at.
+- `session_launch.py`'s `GAME_MODE_ENV` gained `SRT_LOG_TO_JOURNAL=1`, found in real SteamOS's
+  `gamescope-session.service` (the systemd unit, not the launcher script itself, browsed as a
+  quick follow-up look). Routes Steam's bundled steam-runtime-tools `srt-logger` to the
+  systemd journal with its own identifier/prefixes. Confirmed functional rather than assumed:
+  the `srt-logger` binary and its handling of exactly this env var
+  (`sd_journal_send`/`sd_journal_stream_fd`) are present in this machine's own real Steam
+  installation, bundled with Steam's runtime independent of the underlying distro — unlike the
+  QT_IM_MODULE/GTK_IM_MODULE/XCURSOR_THEME mistake earlier in this same round.
 
 ---
 
