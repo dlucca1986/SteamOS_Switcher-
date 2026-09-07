@@ -837,6 +837,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   and a shared helper would need `getattr`/`setattr` on string attribute names to save very
   little, plus one site (`export_support_log`) sets its flag after a synchronous dialog rather
   than before, unlike the other three.
+- `session_launch.py`: raises the process's open-file soft limit toward 524288 before
+  spawning gamescope+Steam (`_raise_nofile_limit`, called from `_build_gamescope_args`) —
+  matches a `ulimit -n 524288` real SteamOS's own `gamescope-session` launcher applies before
+  Steam, found by comparing against a mounted real Deck recovery image. The systemd-managed
+  session normally starts at the systemd-default 1024 soft limit even though the hard limit is
+  already 524288 on a modern distro, so Proton/games with heavy shader-cache or asset I/O can
+  hit that ceiling under normal use even though the headroom to avoid it already exists.
+  Deliberately conservative: only ever raises (never lowers a soft limit a user or distro
+  already set higher via `limits.conf`/a unit override), never exceeds the existing hard
+  limit, and never aborts the session if the call fails for any reason.
 
 ---
 
