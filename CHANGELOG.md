@@ -847,6 +847,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   Deliberately conservative: only ever raises (never lowers a soft limit a user or distro
   already set higher via `limits.conf`/a unit override), never exceeds the existing hard
   limit, and never aborts the session if the call fails for any reason.
+- `session_launch.py`'s `GAME_MODE_ENV` gained `QT_QPA_PLATFORM_THEME=kde` from the same real
+  Deck image comparison (fixes missing icons/unreadable text for Qt apps inside gamescope)
+  and `XCURSOR_SCALE=256` (cursor scale inside the embedded X11 session, applies to whatever
+  theme is already active). Both verified functional on this project's actual target systems
+  before adding (`KDEPlasmaPlatformTheme6.so` is present). Three more vars from the same
+  source block were deliberately **not** ported after checking further:
+  `QT_IM_MODULE=steam`/`GTK_IM_MODULE=Steam` (Steam's on-screen keyboard) and
+  `XCURSOR_THEME=steam` all point at a "steam" plugin/theme that only exists inside the real
+  SteamOS image — confirmed absent from every real install this project targets (no such Qt
+  platforminputcontext plugin, GTK immodule, or icon theme installed anywhere, and not
+  bundled by the Steam client itself). Setting them would be inert, not a real improvement.
+  The same source block's GTK cursor theme `kwriteconfig6` config write was also left out —
+  a privileged file write for a narrow GTK-only benefit versus a plain env var.
 
 ---
 
