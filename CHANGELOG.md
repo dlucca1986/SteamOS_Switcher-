@@ -860,6 +860,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   bundled by the Steam client itself). Setting them would be inert, not a real improvement.
   The same source block's GTK cursor theme `kwriteconfig6` config write was also left out —
   a privileged file write for a narrow GTK-only benefit versus a plain env var.
+- `session_launch.py`'s `GAME_MODE_ENV` gained `STEAM_MULTIPLE_XWAYLANDS=1` (per-game Xwayland
+  isolation, also from the same gamescope-session comparison) — a session capability like the
+  tearing/scaling flags already there, not tied to specific hardware or a personal config
+  choice. Two other candidates from the same script were checked and deliberately left out for
+  failing that same "genuinely agnostic" bar: `STEAM_DISABLE_AUDIO_DEVICE_SWITCHING` (correct
+  only if WirePlumber is the active audio session manager, not guaranteed on every distro) and
+  `STEAM_MANGOAPP_PRESETS_SUPPORTED`/`STEAM_USE_MANGOAPP` (only meaningful if the user has
+  `--mangoapp` in their own gamescope flags). `STEAM_LAUNCH_WRAPPER_SCOPE` (cgroup-per-game)
+  was inconclusive — its mechanism lives inside Steam's own compiled client, not verifiable by
+  reading scripts, and confirming it would need a live per-launch systemd-scope check
+  disproportionate to the expected gain — left unimplemented rather than guessed at.
 
 ---
 
