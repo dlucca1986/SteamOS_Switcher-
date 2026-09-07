@@ -11,6 +11,7 @@
 # =============================================================================
 """
 
+import resource
 import signal
 
 # B404: importing subprocess isn't the risk — every call site below
@@ -72,10 +73,35 @@ GAME_MODE_ENV: dict[str, str] = {
     "WINEDLLOVERRIDES": "dxgi=n",
 }
 
+# Real SteamOS's gamescope-session raises this before spawning Steam —
+# Proton/games with heavy shader-cache or asset I/O can exhaust the
+# systemd-default 1024 soft limit. Matched here for parity, not tuned.
+GAME_MODE_NOFILE_TARGET: int = 524288
+
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _raise_nofile_limit(target: int = GAME_MODE_NOFILE_TARGET) -> None:
+    """Raise this process's open-file soft limit toward *target*, inherited
+    by the gamescope/Steam child spawned right after.
+
+    Only ever raises, never lowers: if a user or distro has already set a
+    higher soft limit (via limits.conf, a systemd unit override, etc.),
+    this is a no-op. Never exceeds the existing hard limit (raising that
+    needs privileges this process doesn't have) and never aborts the
+    session if the call fails for any reason — a low soft limit degrades
+    game behavior under heavy I/O, it doesn't break the launch itself.
+    """
+    try:
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        new_soft = min(target, hard)
+        if new_soft > soft:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (new_soft, hard))
+    except (ValueError, OSError) as err:
+        jlog("STEAM", f"NOFILE_LIMIT_RAISE_FAILED: {err}", level="WARN")
 
 
 def _build_gamescope_args(cfg: dict) -> list[str]:
@@ -84,6 +110,7 @@ def _build_gamescope_args(cfg: dict) -> list[str]:
     GAME_MODE_ENV is applied first so the user's env_vars retain the last
     word; user flags are appended to the gamescope argv.
     """
+    _raise_nofile_limit()
     gs_bin = get_ssot_var("bin_gs", DEFAULT_GS_BIN)
     gs_args = [gs_bin, "-e", "-f"]
 

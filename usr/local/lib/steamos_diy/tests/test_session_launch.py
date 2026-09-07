@@ -63,6 +63,69 @@ def test_build_gamescope_args_survives_non_list_flags(set_ssot):
     assert args[0].endswith("gamescope")
 
 
+def test_raise_nofile_limit_raises_soft_below_target(monkeypatch):
+    monkeypatch.setattr(
+        session_launch.resource, "getrlimit", lambda _r: (1024, 524288)
+    )
+    calls = []
+    monkeypatch.setattr(
+        session_launch.resource,
+        "setrlimit",
+        lambda _r, pair: calls.append(pair),
+    )
+
+    session_launch._raise_nofile_limit(524288)
+
+    assert calls == [(524288, 524288)]
+
+
+def test_raise_nofile_limit_noop_when_already_at_target(monkeypatch):
+    """A user/distro-set soft limit already at or above target must never
+    be lowered — this is the exact overlap risk raised before implementing
+    this fix."""
+    monkeypatch.setattr(
+        session_launch.resource, "getrlimit", lambda _r: (524288, 1048576)
+    )
+    monkeypatch.setattr(
+        session_launch.resource,
+        "setrlimit",
+        lambda *_a: (_ for _ in ()).throw(
+            AssertionError("must not be called")
+        ),
+    )
+
+    session_launch._raise_nofile_limit(524288)
+
+
+def test_raise_nofile_limit_caps_at_existing_hard_limit(monkeypatch):
+    monkeypatch.setattr(
+        session_launch.resource, "getrlimit", lambda _r: (1024, 2048)
+    )
+    calls = []
+    monkeypatch.setattr(
+        session_launch.resource,
+        "setrlimit",
+        lambda _r, pair: calls.append(pair),
+    )
+
+    session_launch._raise_nofile_limit(524288)
+
+    assert calls == [(2048, 2048)]
+
+
+def test_raise_nofile_limit_survives_setrlimit_failure(monkeypatch):
+    monkeypatch.setattr(
+        session_launch.resource, "getrlimit", lambda _r: (1024, 524288)
+    )
+
+    def _boom(*_a):
+        raise OSError("nope")
+
+    monkeypatch.setattr(session_launch.resource, "setrlimit", _boom)
+
+    session_launch._raise_nofile_limit(524288)  # must not raise
+
+
 def test_get_post_start_cmds_returns_empty_for_non_list(set_ssot):
     """Same class of bug as the flags test above, for post_start_cmds:
     a truthy non-list value (e.g. `post_start_cmds: 1`) made the list
